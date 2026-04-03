@@ -41,7 +41,7 @@ def main():
 
     print("\n[STEP 4] Creating dataframes & performing aggregation")
     df = spark.createDataFrame([
-        (i, i*2,'even' if i%2 ==0 else 'odd' for i in range(1, 101))],
+        (i, i*2,'even' if i % 2 == 0 else 'odd') for i in range(1, 101)],
         ['number', 'doubled', 'type'])
 
     print("\n[INFO] SampleDataFrame")
