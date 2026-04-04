@@ -1,9 +1,12 @@
-import os
+from config import SPARK_NAMESPACE, SPARK_HISTORY_URL, DASHBOARD_NAMESPACES
+import requests as req_lib
+from flask import Response
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 from kubernetes import client, config
 
-app = Flask(__name__, template_folder='templates')
+app = Flask(__name__, template_folder='templates',
+            static_folder='static')
 CORS(app)
 
 # Load Kubernetes Config
@@ -12,7 +15,7 @@ try:
 except config.ConfigException:
     config.load_kube_config()
 
-NAMESPACE = os.environ.get("SPARK_NAMESPACE", "spark")
+# NAMESPACE = os.environ.get("SPARK_NAMESPACE", "spark")
 
 core_v1 = client.CoreV1Api()
 batch_v1 = client.BatchV1Api()
@@ -38,7 +41,7 @@ def health():
 # -------------------------Pod API ------------------------
 @app.route('/api/pods')
 def get_pods():
-    ns = request.args.get("namespace", NAMESPACE)
+    ns = request.args.get("namespace", SPARK_NAMESPACE)
     pods = core_v1.list_namespaced_pod(namespace=ns)
     result= []
     for pod in pods.items:
@@ -55,7 +58,7 @@ def get_pods():
 
 @app.route('/api/pods/<name>/logs')
 def get_pod_logs(name):
-    ns = request.args.get("namespace", NAMESPACE)
+    ns = request.args.get("namespace", SPARK_NAMESPACE)
     try:
         logs = core_v1.read_namespaced_pod_log(
             name=name,
@@ -69,18 +72,17 @@ def get_pod_logs(name):
 
 @app.route('/api/pods/<name>', methods=["DELETE"])
 def delete_pod(name):
-    ns = request.args.get("namespace", NAMESPACE)
+    ns = request.args.get("namespace", SPARK_NAMESPACE)
     core_v1.delete_namespaced_pod(name=name, namespace=ns)
     return jsonify({"deleted": name})
 
 @app.route('/api/namespaces')
 def list_namespace():
-    ns_list = core_v1.list_namespace()
-    return jsonify([ns.metadata.name for ns in ns_list.items])
+    return jsonify(DASHBOARD_NAMESPACES)
 
 @app.route('/api/spark-apps')
 def list_spark_apps():
-    ns = request.args.get("namespace", NAMESPACE)
+    ns = request.args.get("namespace", SPARK_NAMESPACE)
     try:
         resp = custom_api.list_namespaced_custom_object(
             group=SPARK_GROUP,
@@ -108,7 +110,7 @@ def list_spark_apps():
 @app.route('/api/spark-apps', methods=["POST"])
 def submit_spark_app():
     body = request.json
-    ns = body.get("namespace", NAMESPACE)
+    ns = body.get("namespace", SPARK_NAMESPACE)
     spark_app = {
         "apiVersion": f"{SPARK_GROUP}/{SPARK_VERSION}",
         "kind": "SparkApplication",
@@ -152,7 +154,7 @@ def submit_spark_app():
 
 @app.route('/api/spark-apps/<name>', methods=["DELETE"])
 def delete_spark_app(name):
-    ns = request.args.get("namespace", NAMESPACE)
+    ns = request.args.get("namespace", SPARK_NAMESPACE)
     custom_api.delete_namespaced_custom_object(
         group=SPARK_GROUP,
         version=SPARK_VERSION,
@@ -162,6 +164,33 @@ def delete_spark_app(name):
     )
     return jsonify({"deleted": name})
 
+@app.route('/api/config')
+def get_config():
+    return jsonify({
+        "defaultNamespace": SPARK_NAMESPACE,
+        "historyServerUrl": SPARK_HISTORY_URL,
+        "namespaces": DASHBOARD_NAMESPACES
+    })
+
+@app.route('/proxy/history/')
+@app.route('/proxy/history/<path:subpath>')
+def proxy_history(subpath=''):
+    target = f"{SPARK_HISTORY_URL}/{subpath}"
+    if request.query_string:
+        target += '?' + request.query_string.decode()
+    try:
+        resp = req_lib.get(target, timeout=5, stream=True)
+        content_type = resp.headers.get('Content-Type', 'text/html')
+        content = resp.content
+        if 'text/html' in content_type:
+            content = content \
+                .replace(b'href="/', b'href="/proxy/history/') \
+                .replace(b'src="/',  b'src="/proxy/history/')  \
+                .replace(b'action="/', b'action="/proxy/history/')
+        return Response(content, status=resp.status_code,
+                        content_type=content_type)
+    except Exception as e:
+        return f"<p>History server unavailable: {e}</p>", 503
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
