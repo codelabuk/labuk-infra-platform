@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SparkK8sFlow — Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0f1117;
+    --bg2:      #1a1d27;
+    --bg3:      #22263a;
+    --border:   rgba(255,255,255,0.08);
+    --border2:  rgba(255,255,255,0.14);
+    --text:     #e8eaf0;
+    --text2:    #8b90a0;
+    --text3:    #555b6e;
+    --green:    #34d399;
+    --green-bg: rgba(52,211,153,0.1);
+    --blue:     #60a5fa;
+    --blue-bg:  rgba(96,165,250,0.1);
+    --amber:    #fbbf24;
+    --amber-bg: rgba(251,191,36,0.1);
+    --red:      #f87171;
+    --red-bg:   rgba(248,113,113,0.1);
+    --purple:   #a78bfa;
+    --purple-bg:rgba(167,139,250,0.1);
+    --radius:   8px;
+    --radius-lg:12px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ── layout ── */
+  .shell { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 1.25rem 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+
+  .logo {
+    padding: 0 1.25rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1rem;
+  }
+  .logo-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .logo-sub {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 2px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 1.25rem;
+    font-size: 13px;
+    color: var(--text2);
+    cursor: pointer;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .nav-item:hover { color: var(--text); background: var(--bg3); }
+  .nav-item.active {
+    color: var(--blue);
+    border-left-color: var(--blue);
+    background: var(--blue-bg);
+    font-weight: 500;
+  }
+  .nav-icon { font-size: 15px; width: 18px; text-align: center; }
+
+  .nav-section {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--text3);
+    padding: 1rem 1.25rem 0.4rem;
+    text-transform: uppercase;
+  }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 1rem 1.25rem 0;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ── main ── */
+  .main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.875rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .topbar-left { display: flex; align-items: center; gap: 12px; flex: 1; }
+
+  .api-input {
+    font-size: 13px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    padding: 6px 10px;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    background: var(--bg3);
+    color: var(--text);
+    width: 220px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .api-input:focus { border-color: var(--blue); }
+
+  .ns-select {
+    font-size: 13px;
+    padding: 6px 10px;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    background: var(--bg3);
+    color: var(--text);
+    outline: none;
+    cursor: pointer;
+  }
+
+  .btn {
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--bg3); color: var(--text); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary { background: var(--blue-bg); color: var(--blue); border-color: rgba(96,165,250,0.3); }
+  .btn-primary:hover { background: rgba(96,165,250,0.2); }
+  .btn-success { background: var(--green-bg); color: var(--green); border-color: rgba(52,211,153,0.3); }
+  .btn-success:hover { background: rgba(52,211,153,0.2); }
+  .btn-danger { background: var(--red-bg); color: var(--red); border-color: rgba(248,113,113,0.3); }
+  .btn-danger:hover { background: rgba(248,113,113,0.2); }
+  .btn-sm { font-size: 11px; padding: 3px 8px; }
+
+  /* ── conn status ── */
+  .conn-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .conn-pill.demo    { background: var(--bg3); color: var(--text3); border-color: var(--border); }
+  .conn-pill.live    { background: var(--green-bg); color: var(--green); border-color: rgba(52,211,153,0.25); }
+  .conn-pill.error   { background: var(--amber-bg); color: var(--amber); border-color: rgba(251,191,36,0.25); }
+  .conn-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  /* ── content area ── */
+  .content { flex: 1; padding: 1.5rem; overflow-y: auto; }
+
+  /* ── page header ── */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+  }
+  .page-title { font-size: 16px; font-weight: 600; color: var(--text); }
+  .page-sub   { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+  /* ── metric cards ── */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 1.25rem;
+  }
+  .metric-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.125rem;
+  }
+  .metric-label { font-size: 11px; color: var(--text3); font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 6px; }
+  .metric-value { font-size: 26px; font-weight: 600; color: var(--text); line-height: 1; }
+  .metric-value.green  { color: var(--green); }
+  .metric-value.red    { color: var(--red); }
+  .metric-value.amber  { color: var(--amber); }
+  .metric-value.blue   { color: var(--blue); }
+
+  /* ── panel / card ── */
+  .panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+  }
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.875rem 1.125rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel-title { font-size: 13px; font-weight: 500; color: var(--text); }
+  .panel-hint  { font-size: 12px; color: var(--text3); }
+  .panel-body  { padding: 1.125rem; }
+
+  /* ── table ── */
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    background: var(--bg3);
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text3);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--bg3); }
+
+  /* ── badges ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+  .badge-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  .badge-running   { background: var(--green-bg);  color: var(--green); }
+  .badge-completed { background: var(--blue-bg);   color: var(--blue);  }
+  .badge-pending   { background: var(--amber-bg);  color: var(--amber); }
+  .badge-failed    { background: var(--red-bg);    color: var(--red);   }
+  .badge-unknown   { background: var(--bg3);       color: var(--text3); }
+  .badge-scala     { background: var(--red-bg);    color: var(--red);   }
+  .badge-python    { background: var(--blue-bg);   color: var(--blue);  }
+  .badge-java      { background: var(--amber-bg);  color: var(--amber); }
+
+  .empty-row td {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text3);
+    font-size: 13px;
+  }
+
+  /* ── form ── */
+  .form-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-group  { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-label  { font-size: 12px; color: var(--text2); font-weight: 500; }
+  .form-input, .form-select {
+    font-size: 13px;
+    padding: 7px 10px;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    background: var(--bg3);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-input:focus, .form-select:focus { border-color: var(--blue); }
+  .form-hint { font-size: 11px; color: var(--text3); }
+
+  .form-section {
+    grid-column: 1 / -1;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+    margin-top: 4px;
+  }
+
+  /* ── presets ── */
+  .preset-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
+  .preset-chip {
+    font-size: 11px;
+    padding: 4px 12px;
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    cursor: pointer;
+    color: var(--text3);
+    background: transparent;
+    transition: all 0.15s;
+  }
+  .preset-chip:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-bg); }
+
+  /* ── log drawer ── */
+  #logDrawer {
+    position: fixed;
+    bottom: 0; left: 220px; right: 0;
+    height: 300px;
+    background: var(--bg);
+    border-top: 1px solid var(--border2);
+    display: none;
+    flex-direction: column;
+    z-index: 40;
+  }
+  .log-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    flex-shrink: 0;
+  }
+  .log-pod-name {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    color: var(--blue);
+  }
+  .log-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    line-height: 1.65;
+    color: #9ca3af;
+    white-space: pre-wrap;
+    word-break: break-all;
+    background: #080b10;
+  }
+  .log-body .log-info    { color: var(--blue);  }
+  .log-body .log-warn    { color: var(--amber); }
+  .log-body .log-error   { color: var(--red);   }
+  .log-body .log-success { color: var(--green); }
+
+  /* ── yaml preview ── */
+  .yaml-pre {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    line-height: 1.65;
+    color: #9ca3af;
+    background: #080b10;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    overflow-x: auto;
+    white-space: pre;
+    margin-top: 1rem;
+    display: none;
+  }
+
+  /* ── toast ── */
+  #toastStack {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+  }
+  .toast {
+    font-size: 13px;
+    font-weight: 500;
+    padding: 9px 14px;
+    border-radius: var(--radius);
+    border: 1px solid transparent;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all 0.2s;
+    pointer-events: auto;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast-success { background: var(--green-bg); color: var(--green); border-color: rgba(52,211,153,0.3); }
+  .toast-error   { background: var(--red-bg);   color: var(--red);   border-color: rgba(248,113,113,0.3); }
+  .toast-info    { background: var(--blue-bg);  color: var(--blue);  border-color: rgba(96,165,250,0.3);  }
+
+  /* ── spinner ── */
+  .spin {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border: 1.5px solid var(--border2);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── page sections (shown/hidden by nav) ── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── history iframe ── */
+  .history-frame {
+    width: 100%;
+    height: calc(100vh - 160px);
+    border: none;
+    border-radius: var(--radius-lg);
+    background: var(--bg2);
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ── sidebar ── -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-title">⚡ SparkK8sFlow</div>
+      <div class="logo-sub">spark on kubernetes</div>
+    </div>
+
+    <div class="nav-section">Cluster</div>
+    <div class="nav-item active" onclick="showPage('pods',this)">
+      <span class="nav-icon">◎</span> Pods
+    </div>
+    <div class="nav-item" onclick="showPage('apps',this)">
+      <span class="nav-icon">◈</span> Spark apps
+    </div>
+
+    <div class="nav-section">Jobs</div>
+    <div class="nav-item" onclick="showPage('deploy',this)">
+      <span class="nav-icon">▶</span> Deploy job
+    </div>
+
+    <div class="nav-section">Observability</div>
+    <div class="nav-item" onclick="showPage('history',this)">
+      <span class="nav-icon">◷</span> Spark history
+    </div>
+
+    <div class="sidebar-footer">
+      <div id="connPill" class="conn-pill demo">
+        <span class="conn-dot"></span>
+        <span id="connText">Demo</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── main area ── -->
+  <div class="main">
+
+    <!-- topbar -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <input id="apiUrl" class="api-input" value="http://localhost:5000" placeholder="Flask API URL"/>
+        <select id="nsSelect" class="ns-select" onchange="refresh()">
+          <option value="spark">spark</option>
+        </select>
+        <button class="btn btn-primary" onclick="refresh()">↻ Refresh</button>
+      </div>
+      <div style="font-size:11px;color:var(--text3);font-family:monospace" id="lastRefresh"></div>
+    </div>
+
+    <!-- content -->
+    <div class="content">
+
+      <!-- ── PODS page ── -->
+      <div id="page-pods" class="page active">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Pods</div>
+            <div class="page-sub">All pods in selected namespace · click <strong>logs</strong> to inspect output</div>
+          </div>
+        </div>
+
+        <div class="metrics">
+          <div class="metric-card">
+            <div class="metric-label">Total pods</div>
+            <div class="metric-value" id="m-total">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Running</div>
+            <div class="metric-value green" id="m-running">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Spark apps</div>
+            <div class="metric-value blue" id="m-apps">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Failed</div>
+            <div class="metric-value red" id="m-failed">—</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Pod list</span>
+            <span class="panel-hint" id="podsHint"></span>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th style="width:34%">Name</th>
+                <th style="width:12%">Status</th>
+                <th style="width:13%">Role</th>
+                <th style="width:16%">Node</th>
+                <th style="width:13%">Created</th>
+                <th style="width:12%">Actions</th>
+              </tr></thead>
+              <tbody id="podsTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SPARK APPS page ── -->
+      <div id="page-apps" class="page">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Spark applications</div>
+            <div class="page-sub">SparkApplication CRDs managed by Spark Operator</div>
+          </div>
+          <button class="btn btn-success" onclick="showPage('deploy', document.querySelector('.nav-item:nth-child(6)'))">+ Deploy new job</button>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Applications</span>
+            <span class="panel-hint" id="appsHint"></span>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th style="width:26%">Name</th>
+                <th style="width:12%">State</th>
+                <th style="width:10%">Type</th>
+                <th style="width:28%">Image</th>
+                <th style="width:13%">Created</th>
+                <th style="width:11%">Actions</th>
+              </tr></thead>
+              <tbody id="appsTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── DEPLOY page ── -->
+      <div id="page-deploy" class="page">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Deploy job</div>
+            <div class="page-sub">Submit a SparkApplication to the cluster via Spark Operator</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Quick presets</span></div>
+          <div class="panel-body">
+            <div class="preset-bar">
+              <span class="preset-chip" onclick="applyPreset('scala-pi')">Spark Pi (Scala)</span>
+              <span class="preset-chip" onclick="applyPreset('scala-wc')">Word count (Scala)</span>
+              <span class="preset-chip" onclick="applyPreset('python-counter')">Simple counter (Python)</span>
+              <span class="preset-chip" onclick="applyPreset('clear')">Clear form</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Job configuration</span></div>
+          <div class="panel-body">
+            <div class="form-grid">
+
+              <div class="form-section">Application</div>
+
+              <div class="form-group">
+                <label class="form-label">Job name *</label>
+                <input id="f-name" class="form-input" value="spark-pi" placeholder="my-spark-job"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Type</label>
+                <select id="f-type" class="form-select" onchange="toggleMainClass()">
+                  <option value="Scala">Scala</option>
+                  <option value="Java">Java</option>
+                  <option value="Python">Python</option>
+                </select>
+              </div>
+
+              <div class="form-group full">
+                <label class="form-label">JAR / application file *</label>
+                <input id="f-jar" class="form-input" value="local:///opt/spark/examples/jars/spark-examples_2.12-3.5.1.jar"/>
+                <span class="form-hint">Use local:/// for files baked into the image, or s3a:// for object storage</span>
+              </div>
+
+              <div class="form-group" id="mainClassGroup">
+                <label class="form-label">Main class *</label>
+                <input id="f-mc" class="form-input" value="org.apache.spark.examples.SparkPi"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Spark image</label>
+                <input id="f-image" class="form-input" value="apache/spark:3.5.1"/>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Namespace</label>
+                <input id="f-ns" class="form-input" value="spark"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Spark version</label>
+                <input id="f-sv" class="form-input" value="3.5.1"/>
+              </div>
+
+              <div class="form-section">Driver</div>
+
+              <div class="form-group">
+                <label class="form-label">Cores</label>
+                <input id="f-dc" class="form-input" type="number" min="1" max="8" value="1"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Memory</label>
+                <input id="f-dm" class="form-input" value="512m" placeholder="512m or 1g"/>
+              </div>
+
+              <div class="form-section">Executor</div>
+
+              <div class="form-group">
+                <label class="form-label">Instances</label>
+                <input id="f-ei" class="form-input" type="number" min="1" max="10" value="1"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Cores</label>
+                <input id="f-ec" class="form-input" type="number" min="1" max="8" value="1"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Memory</label>
+                <input id="f-em" class="form-input" value="512m" placeholder="512m or 1g"/>
+              </div>
+
+            </div>
+
+            <div style="display:flex;gap:10px;align-items:center;margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border)">
+              <button id="submitBtn" class="btn btn-success" onclick="submitJob()">▶ Submit job</button>
+              <button class="btn" onclick="previewYaml()">Preview YAML</button>
+              <span id="submitStatus" style="font-size:12px;color:var(--text3)"></span>
+            </div>
+
+            <pre id="yamlPre" class="yaml-pre"></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SPARK HISTORY page ── -->
+      <div id="page-history" class="page">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Spark history server</div>
+            <div class="page-sub">Running at NodePort 32080 · <a href="http://localhost:32080" target="_blank" style="color:var(--blue)">open in new tab ↗</a></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Embedded view</span></div>
+          <div class="panel-body" style="padding:0">
+            <iframe src="http://localhost:32080" class="history-frame" title="Spark History Server"></iframe>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- log drawer -->
+<div id="logDrawer">
+  <div class="log-header">
+    <div>
+      <span style="font-size:11px;color:var(--text3);margin-right:8px">LOGS</span>
+      <span class="log-pod-name" id="logPodName"></span>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-sm" onclick="refreshLogs()">↻ Refresh</button>
+      <button class="btn btn-sm" onclick="closeLogDrawer()">✕ Close</button>
+    </div>
+  </div>
+  <div id="logBody" class="log-body"></div>
+</div>
+
+<div id="toastStack"></div>
+
+<script>
+// ── demo data ──────────────────────────────────────────────────────────────
+const DEMO_PODS = [
+  {name:"spark-history-server-7d9b4c-xkp2q", status:"Running",  labels:{"app":"spark-history-server"}, node:"docker-desktop", created:"2026-04-03T14:22:10Z"},
+  {name:"spark-pi-driver",                    status:"Completed", labels:{"spark-role":"driver"},        node:"docker-desktop", created:"2026-04-04T08:15:33Z"},
+  {name:"spark-pi-da1968a-exec-1",            status:"Completed", labels:{"spark-role":"executor"},      node:"docker-desktop", created:"2026-04-04T08:15:40Z"},
+  {name:"word-count-driver",                  status:"Running",   labels:{"spark-role":"driver"},        node:"docker-desktop", created:"2026-04-04T09:10:05Z"},
+  {name:"python-etl-driver",                  status:"Failed",    labels:{"spark-role":"driver"},        node:"docker-desktop", created:"2026-04-03T22:00:00Z"}
+];
+const DEMO_APPS = [
+  {name:"spark-pi",    state:"COMPLETED", type:"Scala",  image:"apache/spark:3.5.1",         created:"2026-04-04T08:15:00Z"},
+  {name:"word-count",  state:"RUNNING",   type:"Scala",  image:"apache/spark:3.5.1",         created:"2026-04-04T09:10:00Z"},
+  {name:"python-etl",  state:"FAILED",    type:"Python", image:"apache/spark:3.5.1-python3", created:"2026-04-03T22:00:00Z"}
+];
+const DEMO_NAMESPACES = ["spark","default","airflow","kube-system"];
+const DEMO_LOGS = `26/04/04 09:10:05 INFO SparkContext: Running Spark version 3.5.1
+26/04/04 09:10:05 INFO ResourceUtils: ==============================================================
+26/04/04 09:10:06 INFO SparkContext: Submitted application: WordCount
+26/04/04 09:10:07 INFO TaskSchedulerImpl: Starting task 0.0 in stage 0.0 (TID 0)
+26/04/04 09:10:08 INFO DAGScheduler: Job 0 finished: collect at WordCount.scala:18, took 1.234s
+(Hello,3) (Spark,2) (Docker,1) (CodeLabuk,1)
+26/04/04 09:10:09 INFO SparkContext: Successfully stopped SparkContext`;
+
+// ── presets ────────────────────────────────────────────────────────────────
+const PRESETS = {
+  'scala-pi':       {name:'spark-pi',         type:'Scala',  jar:'local:///opt/spark/examples/jars/spark-examples_2.12-3.5.1.jar', mc:'org.apache.spark.examples.SparkPi', img:'apache/spark:3.5.1',         sv:'3.5.1', dc:1, dm:'512m', ei:2, ec:1, em:'512m'},
+  'scala-wc':       {name:'scala-word-count', type:'Scala',  jar:'local:///opt/spark/work-dir/jobs/simple_counter.py',              mc:'com.codelabuk.WordCount',            img:'apache/spark:3.5.1',         sv:'3.5.1', dc:1, dm:'512m', ei:1, ec:1, em:'512m'},
+  'python-counter': {name:'python-counter',   type:'Python', jar:'local:///opt/spark/work-dir/jobs/simple_counter.py',              mc:'',                                   img:'apache/spark:3.5.1-python3', sv:'3.5.1', dc:1, dm:'512m', ei:1, ec:1, em:'512m'},
+  'clear':          {name:'',                 type:'Scala',  jar:'',                                                                mc:'',                                   img:'apache/spark:3.5.1',         sv:'3.5.1', dc:1, dm:'512m', ei:1, ec:1, em:'512m'}
+};
+
+// ── state ──────────────────────────────────────────────────────────────────
+let liveMode = false;
+let currentLogPod = null;
+
+// ── navigation ─────────────────────────────────────────────────────────────
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if (el) el.classList.add('active');
+}
+
+// ── connection status ──────────────────────────────────────────────────────
+function setConn(state, msg) {
+  const pill = document.getElementById('connPill');
+  const txt  = document.getElementById('connText');
+  pill.className = 'conn-pill ' + state;
+  txt.textContent = msg;
+}
+
+// ── namespace loader ───────────────────────────────────────────────────────
+async function loadNamespaces() {
+  const base = apiBase();
+  try {
+    const res = await fetch(`${base}/api/namespaces`, { signal: AbortSignal.timeout(3000) });
+    const list = await res.json();
+    const sel = document.getElementById('nsSelect');
+    const cur = sel.value;
+    sel.innerHTML = '';
+    list.forEach(n => {
+      const o = document.createElement('option');
+      o.value = n; o.textContent = n;
+      if (n === cur) o.selected = true;
+      sel.appendChild(o);
+    });
+  } catch (_) {
+    // fallback to demo namespaces if not connected
+    const sel = document.getElementById('nsSelect');
+    if (sel.options.length <= 1) {
+      DEMO_NAMESPACES.forEach(n => {
+        if (n === 'spark') return;
+        const o = document.createElement('option');
+        o.value = n; o.textContent = n;
+        sel.appendChild(o);
+      });
+    }
+  }
+}
+
+// ── refresh ────────────────────────────────────────────────────────────────
+function apiBase() {
+  return document.getElementById('apiUrl').value.replace(/\/$/, '');
+}
+
+async function refresh() {
+  const base = apiBase();
+  const ns   = document.getElementById('nsSelect').value;
+  try {
+    const [pr, ar] = await Promise.all([
+      fetch(`${base}/api/pods?namespace=${ns}`,       { signal: AbortSignal.timeout(4000) }),
+      fetch(`${base}/api/spark-apps?namespace=${ns}`, { signal: AbortSignal.timeout(4000) })
+    ]);
+    const pods = await pr.json();
+    const apps = await ar.json();
+    liveMode = true;
+    setConn('live', 'Live');
+    renderPods(pods);
+    renderApps(Array.isArray(apps) ? apps : (apps.items || []));
+    updateMetrics(pods, Array.isArray(apps) ? apps : (apps.items || []));
+    loadNamespaces();
+  } catch (_) {
+    liveMode = false;
+    setConn('error', 'Offline');
+    renderPods(DEMO_PODS);
+    renderApps(DEMO_APPS);
+    updateMetrics(DEMO_PODS, DEMO_APPS);
+  }
+  document.getElementById('lastRefresh').textContent =
+    'Refreshed ' + new Date().toLocaleTimeString();
+}
+
+// ── metrics ────────────────────────────────────────────────────────────────
+function updateMetrics(pods, apps) {
+  document.getElementById('m-total').textContent   = pods.length;
+  document.getElementById('m-running').textContent = pods.filter(p => (p.status||'').toLowerCase() === 'running').length;
+  document.getElementById('m-apps').textContent    = apps.length;
+  document.getElementById('m-failed').textContent  = [
+    ...pods.filter(p => (p.status||'').toLowerCase() === 'failed'),
+    ...apps.filter(a => (a.state||'').toUpperCase() === 'FAILED')
+  ].length;
+  document.getElementById('podsHint').textContent = pods.length + ' pods';
+  document.getElementById('appsHint').textContent = apps.length + ' apps';
+}
+
+// ── badge helpers ──────────────────────────────────────────────────────────
+function statusBadge(s) {
+  s = (s||'').toLowerCase();
+  const map = { running:'running', completed:'completed', succeeded:'completed',
+                pending:'pending', containercreating:'pending',
+                failed:'failed', error:'failed' };
+  const cls = map[s] || 'unknown';
+  return `<span class="badge badge-${cls}"><span class="badge-dot"></span>${s||'unknown'}</span>`;
+}
+function typeBadge(t) {
+  const cls = { Scala:'scala', Python:'python', Java:'java' }[t] || 'unknown';
+  return `<span class="badge badge-${cls}">${t||'—'}</span>`;
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+}
+function fmtLabel(l) {
+  if (!l || !Object.keys(l).length) return '—';
+  return l['spark-role'] || l['app'] || Object.values(l)[0] || '—';
+}
+
+// ── render pods ────────────────────────────────────────────────────────────
+function renderPods(pods) {
+  const tb = document.getElementById('podsTbody');
+  if (!pods.length) {
+    tb.innerHTML = '<tr class="empty-row"><td colspan="6">No pods found in this namespace</td></tr>';
+    return;
+  }
+  tb.innerHTML = pods.map(p => `
+    <tr>
+      <td style="font-family:monospace;font-size:12px" title="${p.name}">${p.name}</td>
+      <td>${statusBadge(p.status)}</td>
+      <td style="color:var(--text2)">${fmtLabel(p.labels)}</td>
+      <td style="color:var(--text3)">${p.node||'—'}</td>
+      <td style="color:var(--text3)">${fmtDate(p.created)}</td>
+      <td>
+        <button class="btn btn-sm" onclick="openLogs('${p.name}')">logs</button>
+        <button class="btn btn-sm btn-danger" style="margin-left:4px" onclick="deletePod('${p.name}')">del</button>
+      </td>
+    </tr>`).join('');
+}
+
+// ── render apps ────────────────────────────────────────────────────────────
+function renderApps(apps) {
+  const tb = document.getElementById('appsTbody');
+  if (!apps.length) {
+    tb.innerHTML = '<tr class="empty-row"><td colspan="6">No SparkApplications found — install Spark Operator and submit a job</td></tr>';
+    return;
+  }
+  tb.innerHTML = apps.map(a => `
+    <tr>
+      <td style="font-family:monospace;font-size:12px" title="${a.name}">${a.name}</td>
+      <td>${statusBadge(a.state)}</td>
+      <td>${typeBadge(a.type)}</td>
+      <td style="color:var(--text3);font-size:12px" title="${a.image||''}">${(a.image||'—').replace('apache/','')}</td>
+      <td style="color:var(--text3)">${fmtDate(a.created)}</td>
+      <td><button class="btn btn-sm btn-danger" onclick="deleteApp('${a.name}')">delete</button></td>
+    </tr>`).join('');
+}
+
+// ── log drawer ─────────────────────────────────────────────────────────────
+function openLogs(podName) {
+  currentLogPod = podName;
+  document.getElementById('logPodName').textContent = podName;
+  document.getElementById('logBody').textContent = 'Loading…';
+  document.getElementById('logDrawer').style.display = 'flex';
+  fetchLogs(podName);
+}
+
+function closeLogDrawer() {
+  document.getElementById('logDrawer').style.display = 'none';
+  currentLogPod = null;
+}
+
+function refreshLogs() {
+  if (currentLogPod) fetchLogs(currentLogPod);
+}
+
+async function fetchLogs(podName) {
+  const body = document.getElementById('logBody');
+  if (!liveMode) {
+    body.textContent = DEMO_LOGS;
+    return;
+  }
+  const ns = document.getElementById('nsSelect').value;
+  try {
+    const res  = await fetch(`${apiBase()}/api/pods/${podName}/logs?namespace=${ns}`, { signal: AbortSignal.timeout(10000) });
+    const data = await res.json();
+    body.textContent = data.logs || 'No logs available.';
+    body.scrollTop   = body.scrollHeight;
+  } catch (e) {
+    body.textContent = 'Could not fetch logs: ' + e.message;
+  }
+}
+
+// ── delete ─────────────────────────────────────────────────────────────────
+async function deletePod(name) {
+  if (!liveMode) { toast('Connect to Flask API first', 'error'); return; }
+  if (!confirm(`Delete pod "${name}"?`)) return;
+  const ns = document.getElementById('nsSelect').value;
+  await fetch(`${apiBase()}/api/pods/${name}?namespace=${ns}`, { method: 'DELETE' });
+  toast(`Deleted pod "${name}"`, 'success');
+  refresh();
+}
+
+async function deleteApp(name) {
+  if (!liveMode) { toast('Connect to Flask API first', 'error'); return; }
+  if (!confirm(`Delete SparkApplication "${name}"?`)) return;
+  const ns = document.getElementById('nsSelect').value;
+  await fetch(`${apiBase()}/api/spark-apps/${name}?namespace=${ns}`, { method: 'DELETE' });
+  toast(`Deleted "${name}"`, 'success');
+  refresh();
+}
+
+// ── deploy ─────────────────────────────────────────────────────────────────
+function toggleMainClass() {
+  const t = document.getElementById('f-type').value;
+  document.getElementById('mainClassGroup').style.display = (t === 'Python' || t === 'R') ? 'none' : 'block';
+}
+
+function applyPreset(key) {
+  const p = PRESETS[key];
+  document.getElementById('f-name').value  = p.name;
+  document.getElementById('f-type').value  = p.type;
+  document.getElementById('f-jar').value   = p.jar;
+  document.getElementById('f-mc').value    = p.mc;
+  document.getElementById('f-image').value = p.img;
+  document.getElementById('f-sv').value    = p.sv;
+  document.getElementById('f-dc').value    = p.dc;
+  document.getElementById('f-dm').value    = p.dm;
+  document.getElementById('f-ei').value    = p.ei;
+  document.getElementById('f-ec').value    = p.ec;
+  document.getElementById('f-em').value    = p.em;
+  toggleMainClass();
+  document.getElementById('yamlPre').style.display = 'none';
+}
+
+function getForm() {
+  return {
+    name:              document.getElementById('f-name').value.trim(),
+    type:              document.getElementById('f-type').value,
+    jarPath:           document.getElementById('f-jar').value.trim(),
+    mainClass:         document.getElementById('f-mc').value.trim(),
+    image:             document.getElementById('f-image').value.trim(),
+    namespace:         document.getElementById('f-ns').value.trim() || 'spark',
+    sparkVersion:      document.getElementById('f-sv').value.trim(),
+    driverCores:       document.getElementById('f-dc').value,
+    driverMemory:      document.getElementById('f-dm').value.trim(),
+    executorInstances: document.getElementById('f-ei').value,
+    executorCores:     document.getElementById('f-ec').value,
+    executorMemory:    document.getElementById('f-em').value.trim()
+  };
+}
+
+function buildYaml(d) {
+  const mc = d.mainClass ? `  mainClass: ${d.mainClass}\n` : '';
+  return `apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: ${d.name || 'my-spark-job'}
+  namespace: ${d.namespace}
+spec:
+  type: ${d.type}
+  mode: cluster
+  image: ${d.image}
+  imagePullPolicy: IfNotPresent
+${mc}  mainApplicationFile: ${d.jarPath}
+  sparkVersion: "${d.sparkVersion}"
+  restartPolicy:
+    type: Never
+  driver:
+    cores: ${d.driverCores}
+    memory: "${d.driverMemory}"
+    serviceAccount: spark
+  executor:
+    cores: ${d.executorCores}
+    instances: ${d.executorInstances}
+    memory: "${d.executorMemory}"`;
+}
+
+function previewYaml() {
+  const pre = document.getElementById('yamlPre');
+  pre.textContent = buildYaml(getForm());
+  pre.style.display = pre.style.display === 'none' ? 'block' : 'none';
+}
+
+async function submitJob() {
+  const d = getForm();
+  if (!d.name)    { toast('Job name is required', 'error'); return; }
+  if (!d.jarPath) { toast('JAR / application file is required', 'error'); return; }
+  if ((d.type === 'Scala' || d.type === 'Java') && !d.mainClass) {
+    toast('Main class is required for Scala/Java', 'error'); return;
+  }
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Submitting…';
+  document.getElementById('submitStatus').textContent = '';
+
+  if (!liveMode) {
+    await new Promise(r => setTimeout(r, 700));
+    btn.disabled = false; btn.textContent = '▶ Submit job';
+    toast('Demo mode — run python app.py and refresh first', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch(`${apiBase()}/api/spark-apps`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(d)
+    });
+    if (res.ok) {
+      toast(`Job "${d.name}" submitted successfully`, 'success');
+      setTimeout(() => {
+        showPage('apps', document.querySelector('.nav-item:nth-child(5)'));
+        refresh();
+      }, 1000);
+    } else {
+      const err = await res.json();
+      toast(`Error: ${err.message || res.statusText}`, 'error');
+    }
+  } catch (e) {
+    toast('Cannot reach Flask API', 'error');
+  }
+  btn.disabled = false; btn.textContent = '▶ Submit job';
+}
+
+// ── toast ──────────────────────────────────────────────────────────────────
+function toast(msg, type) {
+  const stack = document.getElementById('toastStack');
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = msg;
+  stack.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => {
+    t.classList.remove('show');
+    setTimeout(() => t.remove(), 250);
+  }, 3500);
+}
+
+// ── init ───────────────────────────────────────────────────────────────────
+renderPods(DEMO_PODS);
+renderApps(DEMO_APPS);
+updateMetrics(DEMO_PODS, DEMO_APPS);
+</script>
+</body>
+</html>
