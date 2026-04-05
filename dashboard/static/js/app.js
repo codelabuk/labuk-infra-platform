@@ -1,6 +1,5 @@
 // ── demo data ──────────────────────────────────────────────────────────────
-
-const DEMO_LOGS = `26/04/04 09:10:05 INFO SparkContext: Running Spark version 3.5.1
+const DEMO_LOGS = `26/04/04 09:10:05 INFO SparkContext: Running Spark version 3.5.3
 26/04/04 09:10:05 INFO ResourceUtils: ==============================================================
 26/04/04 09:10:06 INFO SparkContext: Submitted application: WordCount
 26/04/04 09:10:07 INFO TaskSchedulerImpl: Starting task 0.0 in stage 0.0 (TID 0)
@@ -10,10 +9,32 @@ const DEMO_LOGS = `26/04/04 09:10:05 INFO SparkContext: Running Spark version 3.
 
 // ── presets ────────────────────────────────────────────────────────────────
 const PRESETS = {
-  'scala-pi':       {name:'spark-pi',         type:'Scala',  jar:'local:///opt/spark/examples/jars/spark-examples_2.12-3.5.1.jar', mc:'org.apache.spark.examples.SparkPi', img:'apache/spark:3.5.1',         sv:'3.5.1', dc:1, dm:'512m', ei:2, ec:1, em:'512m'},
-  'scala-wc':       {name:'scala-word-count', type:'Scala',  jar:'local:///opt/spark/work-dir/jobs/simple_counter.py',              mc:'com.codelabuk.WordCount',            img:'apache/spark:3.5.1',         sv:'3.5.1', dc:1, dm:'512m', ei:1, ec:1, em:'512m'},
-  'python-counter': {name:'python-counter',   type:'Python', jar:'local:///opt/spark/work-dir/jobs/simple_counter.py',              mc:'',                                   img:'apache/spark:3.5.1-python3', sv:'3.5.1', dc:1, dm:'512m', ei:1, ec:1, em:'512m'},
-  'clear':          {name:'',                 type:'Scala',  jar:'',                                                                mc:'',                                   img:'apache/spark:3.5.1',         sv:'3.5.1', dc:1, dm:'512m', ei:1, ec:1, em:'512m'}
+  'scala-pi': {
+    name: 'spark-pi', type: 'Scala',
+    jar:  'local:///opt/spark/examples/jars/spark-examples_2.12-3.5.1.jar',
+    mc:   'org.apache.spark.examples.SparkPi',
+    img:  'apache/spark:3.5.1', sv: '3.5.1',
+    dc: 1, dm: '512m', ei: 1, ec: 1, em: '512m'
+  },
+  'scala-wc': {
+    name: 'scala-word-count', type: 'Scala',
+    jar:  'local:///opt/spark/work-dir/jobs/WordCount.jar',
+    mc:   'com.codelabuk.WordCount',
+    img:  'spark-jobs:latest', sv: '3.5.3',
+    dc: 1, dm: '512m', ei: 1, ec: 1, em: '512m'
+  },
+  'python-counter': {
+    name: 'python-counter', type: 'Python',
+    jar:  'local:///opt/spark/work-dir/jobs/simple_counter.py',
+    mc:   '',
+    img:  'spark-jobs:latest', sv: '3.5.3',
+    dc: 1, dm: '512m', ei: 1, ec: 1, em: '512m'
+  },
+  'clear': {
+    name: '', type: 'Scala', jar: '', mc: '',
+    img:  'apache/spark:3.5.1', sv: '3.5.1',
+    dc: 1, dm: '512m', ei: 1, ec: 1, em: '512m'
+  }
 };
 
 // ── state ──────────────────────────────────────────────────────────────────
@@ -38,14 +59,11 @@ function setConn(state, msg) {
 
 // ── namespace loader ───────────────────────────────────────────────────────
 async function loadNamespaces() {
-  // namespaces already loaded by AppConfig.load() on init
-  // this is called on each refresh — just re-fetch to stay in sync
-  const base = apiBase();
   try {
-    const res = await fetch(`${base}/api/namespaces`, { signal: AbortSignal.timeout(3000) });
+    const res  = await fetch('/api/namespaces', { signal: AbortSignal.timeout(3000) });
     const list = await res.json();
-    const sel = document.getElementById('nsSelect');
-    const cur = sel.value;
+    const sel  = document.getElementById('nsSelect');
+    const cur  = sel.value;
     sel.innerHTML = '';
     list.forEach(n => {
       const o = document.createElement('option');
@@ -53,38 +71,30 @@ async function loadNamespaces() {
       if (n === cur) o.selected = true;
       sel.appendChild(o);
     });
-  } catch (_) {
-    // keep current dropdown on failure
-  }
+  } catch (_) { /* keep current dropdown */ }
 }
 
 // ── refresh ────────────────────────────────────────────────────────────────
-function apiBase() {
-  return document.getElementById('apiUrl').value.replace(/\/$/, '');
-}
-
 async function refresh() {
-  const base = apiBase();
-  const ns   = document.getElementById('nsSelect').value;
+  const ns = document.getElementById('nsSelect').value;
   try {
     const [pr, ar] = await Promise.all([
-      fetch(`${base}/api/pods?namespace=${ns}`,       { signal: AbortSignal.timeout(4000) }),
-      fetch(`${base}/api/spark-apps?namespace=${ns}`, { signal: AbortSignal.timeout(4000) })
+      fetch(`/api/pods?namespace=${ns}`,       { signal: AbortSignal.timeout(5000) }),
+      fetch(`/api/spark-apps?namespace=${ns}`, { signal: AbortSignal.timeout(5000) })
     ]);
-    const pods = await pr.json();
-    const apps = await ar.json();
+    if (!pr.ok || !ar.ok) throw new Error('API error');
+    const podData = await pr.json();
+    const apps    = await ar.json();
     liveMode = true;
     setConn('live', 'Live');
-    renderPods(pods);
-    renderApps(Array.isArray(apps) ? apps : (apps.items || []));
-    updateMetrics(pods, Array.isArray(apps) ? apps : (apps.items || []));
+    const allPods = renderPods(podData);
+    const appList = Array.isArray(apps) ? apps : (apps.items || []);
+    renderApps(appList);
+    updateMetrics(allPods, appList);
     loadNamespaces();
   } catch (_) {
     liveMode = false;
     setConn('error', 'Offline');
-<!--    renderPods(DEMO_PODS);-->
-<!--    renderApps(DEMO_APPS);-->
-<!--    updateMetrics(DEMO_PODS, DEMO_APPS);-->
   }
   document.getElementById('lastRefresh').textContent =
     'Refreshed ' + new Date().toLocaleTimeString();
@@ -92,44 +102,74 @@ async function refresh() {
 
 // ── metrics ────────────────────────────────────────────────────────────────
 function updateMetrics(pods, apps) {
-  document.getElementById('m-total').textContent   = pods.length;
-  document.getElementById('m-running').textContent = pods.filter(p => (p.status||'').toLowerCase() === 'running').length;
-  document.getElementById('m-apps').textContent    = apps.length;
-  document.getElementById('m-failed').textContent  = [
-    ...pods.filter(p => (p.status||'').toLowerCase() === 'failed'),
-    ...apps.filter(a => (a.state||'').toUpperCase() === 'FAILED')
-  ].length;
-  document.getElementById('podsHint').textContent = pods.length + ' pods';
-  document.getElementById('appsHint').textContent = apps.length + ' apps';
+  const allPods = Array.isArray(pods) ? pods : [];
+  const allApps = Array.isArray(apps) ? apps : [];
+
+  const running    = allPods.filter(p => (p.status || '').toLowerCase() === 'running').length;
+  const activeApps = allApps.filter(a => (a.state  || '').toUpperCase() === 'RUNNING').length;
+  const failedPods = allPods.filter(p => (p.status || '').toLowerCase() === 'failed').length;
+  const failedApps = allApps.filter(a => (a.state  || '').toUpperCase() === 'FAILED').length;
+
+  document.getElementById('m-total').textContent   = allPods.length;
+  document.getElementById('m-running').textContent = running;
+  document.getElementById('m-apps').textContent    = activeApps;
+  document.getElementById('m-failed').textContent  = failedPods + failedApps;
+
+  const sparkPodCount = allPods.filter(p =>
+    p.labels && ('spark-role' in p.labels || 'spark-app-name' in p.labels)
+  ).length;
+  const infraPodCount = allPods.length - sparkPodCount;
+
+  document.getElementById('sparkPodsHint').textContent = sparkPodCount + ' spark pods';
+  document.getElementById('infraPodsHint').textContent = infraPodCount + ' pods';
+  document.getElementById('appsHint').textContent      = allApps.length + ' total';
 }
 
 // ── badge helpers ──────────────────────────────────────────────────────────
 function statusBadge(s) {
-  s = (s||'').toLowerCase();
-  const map = { running:'running', completed:'completed', succeeded:'completed',
-                pending:'pending', containercreating:'pending',
-                failed:'failed', error:'failed' };
+  s = (s || '').toLowerCase();
+  const map = {
+    running: 'running', completed: 'completed', succeeded: 'completed',
+    pending: 'pending', containercreating: 'pending',
+    failed: 'failed', error: 'failed'
+  };
   const cls = map[s] || 'unknown';
-  return `<span class="badge badge-${cls}"><span class="badge-dot"></span>${s||'unknown'}</span>`;
+  return `<span class="badge badge-${cls}"><span class="badge-dot"></span>${s || 'unknown'}</span>`;
 }
+
 function typeBadge(t) {
-  const cls = { Scala:'scala', Python:'python', Java:'java' }[t] || 'unknown';
-  return `<span class="badge badge-${cls}">${t||'—'}</span>`;
+  const cls = { Scala: 'scala', Python: 'python', Java: 'java' }[t] || 'unknown';
+  return `<span class="badge badge-${cls}">${t || '—'}</span>`;
 }
+
 function fmtDate(d) {
   if (!d) return '—';
-  return new Date(d).toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+  return new Date(d).toLocaleString('en-GB', {
+    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+  });
 }
+
 function fmtLabel(l) {
   if (!l || !Object.keys(l).length) return '—';
   return l['spark-role'] || l['app'] || Object.values(l)[0] || '—';
 }
 
 // ── render pods ────────────────────────────────────────────────────────────
-function renderPods(pods) {
-  const tb = document.getElementById('podsTbody');
-  if (!pods.length) {
-    tb.innerHTML = '<tr class="empty-row"><td colspan="6">No pods found in this namespace</td></tr>';
+function renderPods(data) {
+  const sparkJobs = data.sparkJobs    || (Array.isArray(data) ? data : []);
+  const infra     = data.infrastructure || [];
+  const all       = data.all          || (Array.isArray(data) ? data : sparkJobs.concat(infra));
+
+  renderPodTable('sparkJobsTbody', sparkJobs, 'No Spark job pods running');
+  renderPodTable('infraTbody',     infra,     'No infrastructure pods');
+  return all;
+}
+
+function renderPodTable(tbodyId, pods, emptyMsg) {
+  const tb = document.getElementById(tbodyId);
+  if (!tb) return;
+  if (!pods || !pods.length) {
+    tb.innerHTML = `<tr class="empty-row"><td colspan="6">${emptyMsg}</td></tr>`;
     return;
   }
   tb.innerHTML = pods.map(p => `
@@ -137,11 +177,12 @@ function renderPods(pods) {
       <td style="font-family:monospace;font-size:12px" title="${p.name}">${p.name}</td>
       <td>${statusBadge(p.status)}</td>
       <td style="color:var(--text2)">${fmtLabel(p.labels)}</td>
-      <td style="color:var(--text3)">${p.node||'—'}</td>
+      <td style="color:var(--text3)">${p.node || '—'}</td>
       <td style="color:var(--text3)">${fmtDate(p.created)}</td>
       <td>
         <button class="btn btn-sm" onclick="openLogs('${p.name}')">logs</button>
-        <button class="btn btn-sm btn-danger" style="margin-left:4px" onclick="deletePod('${p.name}')">del</button>
+        <button class="btn btn-sm btn-danger" style="margin-left:4px"
+                onclick="deletePod('${p.name}')">del</button>
       </td>
     </tr>`).join('');
 }
@@ -149,8 +190,8 @@ function renderPods(pods) {
 // ── render apps ────────────────────────────────────────────────────────────
 function renderApps(apps) {
   const tb = document.getElementById('appsTbody');
-  if (!apps.length) {
-    tb.innerHTML = '<tr class="empty-row"><td colspan="6">No SparkApplications found — install Spark Operator and submit a job</td></tr>';
+  if (!apps || !apps.length) {
+    tb.innerHTML = '<tr class="empty-row"><td colspan="6">No SparkApplications found — submit a job from Deploy job page</td></tr>';
     return;
   }
   tb.innerHTML = apps.map(a => `
@@ -158,7 +199,7 @@ function renderApps(apps) {
       <td style="font-family:monospace;font-size:12px" title="${a.name}">${a.name}</td>
       <td>${statusBadge(a.state)}</td>
       <td>${typeBadge(a.type)}</td>
-      <td style="color:var(--text3);font-size:12px" title="${a.image||''}">${(a.image||'—').replace('apache/','')}</td>
+      <td style="color:var(--text3);font-size:12px" title="${a.image || ''}">${(a.image || '—').replace('apache/', '')}</td>
       <td style="color:var(--text3)">${fmtDate(a.created)}</td>
       <td><button class="btn btn-sm btn-danger" onclick="deleteApp('${a.name}')">delete</button></td>
     </tr>`).join('');
@@ -168,7 +209,7 @@ function renderApps(apps) {
 function openLogs(podName) {
   currentLogPod = podName;
   document.getElementById('logPodName').textContent = podName;
-  document.getElementById('logBody').textContent = 'Loading…';
+  document.getElementById('logBody').textContent    = 'Loading…';
   document.getElementById('logDrawer').style.display = 'flex';
   fetchLogs(podName);
 }
@@ -190,7 +231,8 @@ async function fetchLogs(podName) {
   }
   const ns = document.getElementById('nsSelect').value;
   try {
-    const res  = await fetch(`${apiBase()}/api/pods/${podName}/logs?namespace=${ns}`, { signal: AbortSignal.timeout(10000) });
+    const res  = await fetch(`/api/pods/${podName}/logs?namespace=${ns}`,
+                             { signal: AbortSignal.timeout(10000) });
     const data = await res.json();
     body.textContent = data.logs || 'No logs available.';
     body.scrollTop   = body.scrollHeight;
@@ -201,26 +243,26 @@ async function fetchLogs(podName) {
 
 // ── delete ─────────────────────────────────────────────────────────────────
 async function deletePod(name) {
-  if (!liveMode) { toast('Connect to Flask API first', 'error'); return; }
+  if (!liveMode) { toast('Not connected to API', 'error'); return; }
   if (!confirm(`Delete pod "${name}"?`)) return;
   const ns = document.getElementById('nsSelect').value;
-  await fetch(`${apiBase()}/api/pods/${name}?namespace=${ns}`, { method: 'DELETE' });
+  await fetch(`/api/pods/${name}?namespace=${ns}`, { method: 'DELETE' });
   toast(`Deleted pod "${name}"`, 'success');
   refresh();
 }
 
 async function deleteApp(name) {
-  if (!liveMode) { toast('Connect to Flask API first', 'error'); return; }
+  if (!liveMode) { toast('Not connected to API', 'error'); return; }
   if (!confirm(`Delete SparkApplication "${name}"?`)) return;
   const ns = document.getElementById('nsSelect').value;
-  await fetch(`${apiBase()}/api/spark-apps/${name}?namespace=${ns}`, { method: 'DELETE' });
+  await fetch(`/api/spark-apps/${name}?namespace=${ns}`, { method: 'DELETE' });
   toast(`Deleted "${name}"`, 'success');
   refresh();
 }
 
 // ── deploy ─────────────────────────────────────────────────────────────────
 function toggleMainClass() {
-  const t = document.getElementById('f-type').value;
+  const t     = document.getElementById('f-type').value;
   const group = document.getElementById('mainClassGroup');
   const input = document.getElementById('f-mc');
   if (t === 'Python' || t === 'R') {
@@ -233,6 +275,7 @@ function toggleMainClass() {
 
 function applyPreset(key) {
   const p = PRESETS[key];
+  if (!p) return;
   document.getElementById('f-name').value  = p.name;
   document.getElementById('f-type').value  = p.type;
   document.getElementById('f-jar').value   = p.jar;
@@ -276,7 +319,7 @@ spec:
   type: ${d.type}
   mode: cluster
   image: ${d.image}
-  imagePullPolicy: IfNotPresent
+  imagePullPolicy: Never
 ${mc}  mainApplicationFile: ${d.jarPath}
   sparkVersion: "${d.sparkVersion}"
   restartPolicy:
@@ -304,6 +347,7 @@ async function submitJob() {
   if ((d.type === 'Scala' || d.type === 'Java') && !d.mainClass) {
     toast('Main class is required for Scala/Java', 'error'); return;
   }
+
   const btn = document.getElementById('submitBtn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spin"></span> Submitting…';
@@ -311,38 +355,41 @@ async function submitJob() {
 
   if (!liveMode) {
     await new Promise(r => setTimeout(r, 700));
-    btn.disabled = false; btn.textContent = '▶ Submit job';
-    toast('Demo mode — run python app.py and refresh first', 'error');
+    btn.disabled = false;
+    btn.textContent = '▶ Submit job';
+    toast('Not connected — run python app.py and refresh first', 'error');
     return;
   }
 
   try {
-    const res = await fetch(`${apiBase()}/api/spark-apps`, {
-      method: 'POST',
+    const res = await fetch('/api/spark-apps', {
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(d)
+      body:    JSON.stringify(d)
     });
     if (res.ok) {
-      toast(`Job "${d.name}" submitted successfully`, 'success');
+      toast(`Job "${d.name}" submitted`, 'success');
       setTimeout(() => {
-        showPage('apps', document.querySelector('.nav-item:nth-child(5)'));
+        showPage('apps', document.getElementById('nav-apps'));
         refresh();
-      }, 1000);
+      }, 1500);
     } else {
-      const err = await res.json();
-      toast(`Error: ${err.message || res.statusText}`, 'error');
+      let msg = res.statusText;
+      try { const e = await res.json(); msg = e.message || msg; } catch(_) {}
+      toast(`Error: ${msg}`, 'error');
     }
   } catch (e) {
-    toast('Cannot reach Flask API', 'error');
+    toast('Cannot reach Flask API: ' + e.message, 'error');
   }
-  btn.disabled = false; btn.textContent = '▶ Submit job';
+  btn.disabled = false;
+  btn.textContent = '▶ Submit job';
 }
 
 // ── toast ──────────────────────────────────────────────────────────────────
 function toast(msg, type) {
   const stack = document.getElementById('toastStack');
   const t = document.createElement('div');
-  t.className = `toast toast-${type}`;
+  t.className   = `toast toast-${type}`;
   t.textContent = msg;
   stack.appendChild(t);
   requestAnimationFrame(() => t.classList.add('show'));
@@ -352,10 +399,13 @@ function toast(msg, type) {
   }, 3500);
 }
 
+// ── auto-refresh ───────────────────────────────────────────────────────────
+setInterval(() => { if (liveMode) refresh(); }, 30000);
+
 // ── init ──────────────────────────────────────────────────────────────────
 async function init() {
-  await AppConfig.load();   // loads config, sets namespace dropdown + history iframe
-  refresh();                // loads pods and apps
+  await AppConfig.load();
+  refresh();
 }
 
 init();

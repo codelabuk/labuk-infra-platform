@@ -43,18 +43,30 @@ def health():
 def get_pods():
     ns = request.args.get("namespace", SPARK_NAMESPACE)
     pods = core_v1.list_namespaced_pod(namespace=ns)
-    result= []
+    spark_jobs = []
+    infrastructure = []
     for pod in pods.items:
-        result.append({
-            "name": pod.metadata.name,
+        labels = pod.metadata.labels or {}
+        pod_data = {
+            "name":      pod.metadata.name,
             "namespace": pod.metadata.namespace,
-            "status": pod.status.phase,
-            "node": pod.spec.node_name,
-            "created": pod.metadata.creation_timestamp.isoformat()
-                       if pod.metadata.creation_timestamp else None,
-            "labels": pod.metadata.labels or {}
-        })
-    return jsonify(result)
+            "status":    pod.status.phase,
+            "node":      pod.spec.node_name,
+            "created":   pod.metadata.creation_timestamp.isoformat()
+                         if pod.metadata.creation_timestamp else None,
+            "labels":    labels
+        }
+        # spark job pods have spark-role label
+        if "spark-role" in labels or "spark-app-name" in labels:
+            spark_jobs.append(pod_data)
+        else:
+            infrastructure.append(pod_data)
+
+    return jsonify({
+        "sparkJobs": spark_jobs,
+        "infrastructure": infrastructure,
+        "all": spark_jobs + infrastructure
+    })
 
 @app.route('/api/pods/<name>/logs')
 def get_pod_logs(name):

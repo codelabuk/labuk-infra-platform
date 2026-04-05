@@ -8,26 +8,25 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg:       #0f1117;
-    --bg2:      #1a1d27;
-    --bg3:      #22263a;
-    --border:   rgba(255,255,255,0.08);
-    --border2:  rgba(255,255,255,0.14);
-    --text:     #e8eaf0;
-    --text2:    #8b90a0;
-    --text3:    #555b6e;
-    --green:    #34d399;
-    --green-bg: rgba(52,211,153,0.1);
-    --blue:     #60a5fa;
-    --blue-bg:  rgba(96,165,250,0.1);
-    --amber:    #fbbf24;
-    --amber-bg: rgba(251,191,36,0.1);
-    --red:      #f87171;
-    --red-bg:   rgba(248,113,113,0.1);
-    --purple:   #a78bfa;
-    --purple-bg:rgba(167,139,250,0.1);
-    --radius:   8px;
-    --radius-lg:12px;
+    --bg:        #0f1117;
+    --bg2:       #1a1d27;
+    --bg3:       #22263a;
+    --border:    rgba(255,255,255,0.08);
+    --border2:   rgba(255,255,255,0.14);
+    --text:      #e8eaf0;
+    --text2:     #8b90a0;
+    --text3:     #555b6e;
+    --green:     #34d399;
+    --green-bg:  rgba(52,211,153,0.1);
+    --blue:      #60a5fa;
+    --blue-bg:   rgba(96,165,250,0.1);
+    --amber:     #fbbf24;
+    --amber-bg:  rgba(251,191,36,0.1);
+    --red:       #f87171;
+    --red-bg:    rgba(248,113,113,0.1);
+    --radius:    8px;
+    --radius-lg: 12px;
+    --sidebar-w: 220px;
   }
 
   body {
@@ -39,11 +38,16 @@
     min-height: 100vh;
   }
 
-  /* ── layout ── */
-  .shell { display: flex; min-height: 100vh; }
+  /* ── layout ───────────────────────────────────────────── */
+  .shell {
+    display: flex;
+    min-height: 100vh;
+  }
 
+  /* ── sidebar ──────────────────────────────────────────── */
   .sidebar {
-    width: 220px;
+    width: var(--sidebar-w);
+    min-width: var(--sidebar-w);
     flex-shrink: 0;
     background: var(--bg2);
     border-right: 1px solid var(--border);
@@ -53,6 +57,7 @@
     position: sticky;
     top: 0;
     height: 100vh;
+    overflow-y: auto;
   }
 
   .logo {
@@ -65,12 +70,24 @@
     font-weight: 600;
     color: var(--text);
     letter-spacing: -0.01em;
+    white-space: nowrap;
   }
   .logo-sub {
     font-size: 11px;
     color: var(--text3);
     margin-top: 2px;
     font-family: 'SF Mono', 'Fira Code', monospace;
+    white-space: nowrap;
+  }
+
+  .nav-section {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--text3);
+    padding: 1rem 1.25rem 0.4rem;
+    text-transform: uppercase;
+    white-space: nowrap;
   }
 
   .nav-item {
@@ -83,24 +100,16 @@
     cursor: pointer;
     border-left: 2px solid transparent;
     transition: all 0.15s;
+    white-space: nowrap;
   }
-  .nav-item:hover { color: var(--text); background: var(--bg3); }
+  .nav-item:hover  { color: var(--text); background: var(--bg3); }
   .nav-item.active {
     color: var(--blue);
     border-left-color: var(--blue);
     background: var(--blue-bg);
     font-weight: 500;
   }
-  .nav-icon { font-size: 15px; width: 18px; text-align: center; }
-
-  .nav-section {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    color: var(--text3);
-    padding: 1rem 1.25rem 0.4rem;
-    text-transform: uppercase;
-  }
+  .nav-icon { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; }
 
   .sidebar-footer {
     margin-top: auto;
@@ -108,9 +117,16 @@
     border-top: 1px solid var(--border);
   }
 
-  /* ── main ── */
-  .main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+  /* ── main area ────────────────────────────────────────── */
+  .main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
 
+  /* ── topbar ───────────────────────────────────────────── */
   .topbar {
     display: flex;
     align-items: center;
@@ -121,22 +137,12 @@
     gap: 12px;
     flex-shrink: 0;
   }
-
-  .topbar-left { display: flex; align-items: center; gap: 12px; flex: 1; }
-
-  .api-input {
-    font-size: 13px;
-    font-family: 'SF Mono', 'Fira Code', monospace;
-    padding: 6px 10px;
-    border: 1px solid var(--border2);
-    border-radius: var(--radius);
-    background: var(--bg3);
-    color: var(--text);
-    width: 220px;
-    outline: none;
-    transition: border-color 0.15s;
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
   }
-  .api-input:focus { border-color: var(--blue); }
 
   .ns-select {
     font-size: 13px;
@@ -149,6 +155,7 @@
     cursor: pointer;
   }
 
+  /* ── buttons ──────────────────────────────────────────── */
   .btn {
     font-size: 13px;
     padding: 6px 14px;
@@ -160,17 +167,17 @@
     transition: all 0.15s;
     white-space: nowrap;
   }
-  .btn:hover { background: var(--bg3); color: var(--text); }
+  .btn:hover    { background: var(--bg3); color: var(--text); }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn-primary { background: var(--blue-bg); color: var(--blue); border-color: rgba(96,165,250,0.3); }
-  .btn-primary:hover { background: rgba(96,165,250,0.2); }
-  .btn-success { background: var(--green-bg); color: var(--green); border-color: rgba(52,211,153,0.3); }
-  .btn-success:hover { background: rgba(52,211,153,0.2); }
-  .btn-danger { background: var(--red-bg); color: var(--red); border-color: rgba(248,113,113,0.3); }
-  .btn-danger:hover { background: rgba(248,113,113,0.2); }
+  .btn-primary  { background: var(--blue-bg);  color: var(--blue);  border-color: rgba(96,165,250,0.3); }
+  .btn-primary:hover  { background: rgba(96,165,250,0.2); }
+  .btn-success  { background: var(--green-bg); color: var(--green); border-color: rgba(52,211,153,0.3); }
+  .btn-success:hover  { background: rgba(52,211,153,0.2); }
+  .btn-danger   { background: var(--red-bg);   color: var(--red);   border-color: rgba(248,113,113,0.3); }
+  .btn-danger:hover   { background: rgba(248,113,113,0.2); }
   .btn-sm { font-size: 11px; padding: 3px 8px; }
 
-  /* ── conn status ── */
+  /* ── connection pill ──────────────────────────────────── */
   .conn-pill {
     display: inline-flex;
     align-items: center;
@@ -181,45 +188,63 @@
     border: 1px solid transparent;
     white-space: nowrap;
   }
-  .conn-pill.demo    { background: var(--bg3); color: var(--text3); border-color: var(--border); }
-  .conn-pill.live    { background: var(--green-bg); color: var(--green); border-color: rgba(52,211,153,0.25); }
-  .conn-pill.error   { background: var(--amber-bg); color: var(--amber); border-color: rgba(251,191,36,0.25); }
+  .conn-pill.demo  { background: var(--bg3);      color: var(--text3); border-color: var(--border); }
+  .conn-pill.live  { background: var(--green-bg); color: var(--green); border-color: rgba(52,211,153,0.25); }
+  .conn-pill.error { background: var(--amber-bg); color: var(--amber); border-color: rgba(251,191,36,0.25); }
   .conn-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
-  /* ── content area ── */
-  .content { flex: 1; padding: 1.5rem; overflow-y: auto; }
+  /* ── content area ─────────────────────────────────────── */
+  .content {
+    flex: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+    min-width: 0;
+  }
 
-  /* ── page header ── */
+  /* ── page visibility ──────────────────────────────────── */
+  .page         { display: none; }
+  .page.active  { display: block; }
+
+  /* ── page header ──────────────────────────────────────── */
   .page-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 8px;
   }
   .page-title { font-size: 16px; font-weight: 600; color: var(--text); }
   .page-sub   { font-size: 12px; color: var(--text3); margin-top: 2px; }
 
-  /* ── metric cards ── */
+  /* ── metric cards ─────────────────────────────────────── */
   .metrics {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 12px;
     margin-bottom: 1.25rem;
   }
+  @media (max-width: 900px) { .metrics { grid-template-columns: repeat(2,1fr); } }
   .metric-card {
     background: var(--bg2);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: 1rem 1.125rem;
   }
-  .metric-label { font-size: 11px; color: var(--text3); font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 6px; }
-  .metric-value { font-size: 26px; font-weight: 600; color: var(--text); line-height: 1; }
-  .metric-value.green  { color: var(--green); }
-  .metric-value.red    { color: var(--red); }
-  .metric-value.amber  { color: var(--amber); }
-  .metric-value.blue   { color: var(--blue); }
+  .metric-label {
+    font-size: 11px;
+    color: var(--text3);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .metric-value       { font-size: 26px; font-weight: 600; color: var(--text); line-height: 1; }
+  .metric-value.green { color: var(--green); }
+  .metric-value.red   { color: var(--red); }
+  .metric-value.blue  { color: var(--blue); }
 
-  /* ── panel / card ── */
+  /* ── panels ───────────────────────────────────────────── */
   .panel {
     background: var(--bg2);
     border: 1px solid var(--border);
@@ -238,7 +263,7 @@
   .panel-hint  { font-size: 12px; color: var(--text3); }
   .panel-body  { padding: 1.125rem; }
 
-  /* ── table ── */
+  /* ── tables ───────────────────────────────────────────── */
   .tbl-wrap { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   thead th {
@@ -260,11 +285,21 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    max-width: 0;
   }
+  tbody td:first-child { max-width: none; }
   tbody tr:last-child td { border-bottom: none; }
   tbody tr:hover td { background: var(--bg3); }
+  .empty-row td {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text3);
+    font-size: 13px;
+    white-space: normal;
+    max-width: none;
+  }
 
-  /* ── badges ── */
+  /* ── badges ───────────────────────────────────────────── */
   .badge {
     display: inline-flex;
     align-items: center;
@@ -273,29 +308,23 @@
     font-weight: 500;
     padding: 2px 8px;
     border-radius: 20px;
+    white-space: nowrap;
   }
-  .badge-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
-  .badge-running   { background: var(--green-bg);  color: var(--green); }
-  .badge-completed { background: var(--blue-bg);   color: var(--blue);  }
-  .badge-pending   { background: var(--amber-bg);  color: var(--amber); }
-  .badge-failed    { background: var(--red-bg);    color: var(--red);   }
-  .badge-unknown   { background: var(--bg3);       color: var(--text3); }
-  .badge-scala     { background: var(--red-bg);    color: var(--red);   }
-  .badge-python    { background: var(--blue-bg);   color: var(--blue);  }
-  .badge-java      { background: var(--amber-bg);  color: var(--amber); }
+  .badge-dot       { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  .badge-running   { background: var(--green-bg); color: var(--green); }
+  .badge-completed { background: var(--blue-bg);  color: var(--blue);  }
+  .badge-pending   { background: var(--amber-bg); color: var(--amber); }
+  .badge-failed    { background: var(--red-bg);   color: var(--red);   }
+  .badge-unknown   { background: var(--bg3);      color: var(--text3); }
+  .badge-scala     { background: var(--red-bg);   color: var(--red);   }
+  .badge-python    { background: var(--blue-bg);  color: var(--blue);  }
+  .badge-java      { background: var(--amber-bg); color: var(--amber); }
 
-  .empty-row td {
-    text-align: center;
-    padding: 3rem;
-    color: var(--text3);
-    font-size: 13px;
-  }
-
-  /* ── form ── */
-  .form-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .form-group  { display: flex; flex-direction: column; gap: 5px; }
+  /* ── form ─────────────────────────────────────────────── */
+  .form-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
   .form-group.full { grid-column: 1 / -1; }
-  .form-label  { font-size: 12px; color: var(--text2); font-weight: 500; }
+  .form-label { font-size: 12px; color: var(--text2); font-weight: 500; }
   .form-input, .form-select {
     font-size: 13px;
     padding: 7px 10px;
@@ -305,10 +334,10 @@
     color: var(--text);
     outline: none;
     transition: border-color 0.15s;
+    width: 100%;
   }
   .form-input:focus, .form-select:focus { border-color: var(--blue); }
   .form-hint { font-size: 11px; color: var(--text3); }
-
   .form-section {
     grid-column: 1 / -1;
     font-size: 11px;
@@ -321,8 +350,8 @@
     margin-top: 4px;
   }
 
-  /* ── presets ── */
-  .preset-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
+  /* ── presets ──────────────────────────────────────────── */
+  .preset-bar { display: flex; gap: 6px; flex-wrap: wrap; }
   .preset-chip {
     font-size: 11px;
     padding: 4px 12px;
@@ -335,10 +364,28 @@
   }
   .preset-chip:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-bg); }
 
-  /* ── log drawer ── */
+  /* ── YAML preview ─────────────────────────────────────── */
+  .yaml-pre {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    line-height: 1.65;
+    color: #9ca3af;
+    background: #080b10;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    overflow-x: auto;
+    white-space: pre;
+    margin-top: 1rem;
+    display: none;
+  }
+
+  /* ── log drawer ───────────────────────────────────────── */
   #logDrawer {
     position: fixed;
-    bottom: 0; left: 220px; right: 0;
+    bottom: 0;
+    left: var(--sidebar-w);
+    right: 0;
     height: 300px;
     background: var(--bg);
     border-top: 1px solid var(--border2);
@@ -360,7 +407,7 @@
     font-size: 12px;
     color: var(--blue);
   }
-  .log-body {
+  #logBody {
     flex: 1;
     overflow-y: auto;
     padding: 12px 16px;
@@ -371,29 +418,19 @@
     white-space: pre-wrap;
     word-break: break-all;
     background: #080b10;
-  }
-  .log-body .log-info    { color: var(--blue);  }
-  .log-body .log-warn    { color: var(--amber); }
-  .log-body .log-error   { color: var(--red);   }
-  .log-body .log-success { color: var(--green); }
-
-  /* ── yaml preview ── */
-  .yaml-pre {
-    font-family: 'SF Mono', 'Fira Code', monospace;
-    font-size: 12px;
-    line-height: 1.65;
-    color: #9ca3af;
-    background: #080b10;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1rem;
-    overflow-x: auto;
-    white-space: pre;
-    margin-top: 1rem;
-    display: none;
+    margin: 0;
   }
 
-  /* ── toast ── */
+  /* ── history iframe ───────────────────────────────────── */
+  .history-frame {
+    width: 100%;
+    height: calc(100vh - 160px);
+    border: none;
+    border-radius: var(--radius-lg);
+    background: var(--bg2);
+  }
+
+  /* ── toast ────────────────────────────────────────────── */
   #toastStack {
     position: fixed;
     bottom: 24px;
@@ -415,12 +452,12 @@
     transition: all 0.2s;
     pointer-events: auto;
   }
-  .toast.show { opacity: 1; transform: translateY(0); }
-  .toast-success { background: var(--green-bg); color: var(--green); border-color: rgba(52,211,153,0.3); }
-  .toast-error   { background: var(--red-bg);   color: var(--red);   border-color: rgba(248,113,113,0.3); }
-  .toast-info    { background: var(--blue-bg);  color: var(--blue);  border-color: rgba(96,165,250,0.3);  }
+  .toast.show      { opacity: 1; transform: translateY(0); }
+  .toast-success   { background: var(--green-bg); color: var(--green); border-color: rgba(52,211,153,0.3); }
+  .toast-error     { background: var(--red-bg);   color: var(--red);   border-color: rgba(248,113,113,0.3); }
+  .toast-info      { background: var(--blue-bg);  color: var(--blue);  border-color: rgba(96,165,250,0.3); }
 
-  /* ── spinner ── */
+  /* ── spinner ──────────────────────────────────────────── */
   .spin {
     display: inline-block;
     width: 12px; height: 12px;
@@ -432,21 +469,8 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ── page sections (shown/hidden by nav) ── */
-  .page { display: none; }
-  .page.active { display: block; }
-
-  /* ── history iframe ── */
-  .history-frame {
-    width: 100%;
-    height: calc(100vh - 160px);
-    border: none;
-    border-radius: var(--radius-lg);
-    background: var(--bg2);
-  }
-
-  /* scrollbar */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  /* ── scrollbar ────────────────────────────────────────── */
+  ::-webkit-scrollbar       { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
 </style>
@@ -455,7 +479,7 @@
 
 <div class="shell">
 
-  <!-- ── sidebar ── -->
+  <!-- ── SIDEBAR ── -->
   <aside class="sidebar">
     <div class="logo">
       <div class="logo-title">⚡ SparkK8sFlow</div>
@@ -463,20 +487,20 @@
     </div>
 
     <div class="nav-section">Cluster</div>
-    <div class="nav-item active" onclick="showPage('pods',this)">
+    <div id="nav-pods" class="nav-item active" onclick="showPage('pods',this)">
       <span class="nav-icon">◎</span> Pods
     </div>
-    <div class="nav-item" onclick="showPage('apps',this)">
+    <div id="nav-apps" class="nav-item" onclick="showPage('apps',this)">
       <span class="nav-icon">◈</span> Spark apps
     </div>
 
     <div class="nav-section">Jobs</div>
-    <div class="nav-item" onclick="showPage('deploy',this)">
+    <div id="nav-deploy" class="nav-item" onclick="showPage('deploy',this)">
       <span class="nav-icon">▶</span> Deploy job
     </div>
 
     <div class="nav-section">Observability</div>
-    <div class="nav-item" onclick="showPage('history',this)">
+    <div id="nav-history" class="nav-item" onclick="showPage('history',this)">
       <span class="nav-icon">◷</span> Spark history
     </div>
 
@@ -488,30 +512,30 @@
     </div>
   </aside>
 
-  <!-- ── main area ── -->
+  <!-- ── MAIN ── -->
   <div class="main">
 
     <!-- topbar -->
     <div class="topbar">
       <div class="topbar-left">
-        <input id="apiUrl" class="api-input" value="" placeholder="API auto-detected"/>
+        <input id="apiUrl" type="hidden" value=""/>
         <select id="nsSelect" class="ns-select" onchange="refresh()">
           <option value="spark">spark</option>
         </select>
         <button class="btn btn-primary" onclick="refresh()">↻ Refresh</button>
       </div>
-      <div style="font-size:11px;color:var(--text3);font-family:monospace" id="lastRefresh"></div>
+      <div id="lastRefresh" style="font-size:11px;color:var(--text3);font-family:monospace"></div>
     </div>
 
-    <!-- content -->
+    <!-- scrollable content -->
     <div class="content">
 
-      <!-- ── PODS page ── -->
+      <!-- ══ PODS PAGE ══ -->
       <div id="page-pods" class="page active">
         <div class="page-header">
           <div>
             <div class="page-title">Pods</div>
-            <div class="page-sub">All pods in selected namespace · click <strong>logs</strong> to inspect output</div>
+            <div class="page-sub">All pods in selected namespace · click <strong>logs</strong> to inspect output · auto-refreshes every 30s</div>
           </div>
         </div>
 
@@ -525,7 +549,7 @@
             <div class="metric-value green" id="m-running">—</div>
           </div>
           <div class="metric-card">
-            <div class="metric-label">Spark apps</div>
+            <div class="metric-label">Active spark apps</div>
             <div class="metric-value blue" id="m-apps">—</div>
           </div>
           <div class="metric-card">
@@ -536,8 +560,8 @@
 
         <div class="panel">
           <div class="panel-header">
-            <span class="panel-title">Pod list</span>
-            <span class="panel-hint" id="podsHint"></span>
+            <span class="panel-title">Spark job pods</span>
+            <span class="panel-hint" id="sparkPodsHint"></span>
           </div>
           <div class="tbl-wrap">
             <table>
@@ -549,20 +573,43 @@
                 <th style="width:13%">Created</th>
                 <th style="width:12%">Actions</th>
               </tr></thead>
-              <tbody id="podsTbody"></tbody>
+              <tbody id="sparkJobsTbody"></tbody>
             </table>
           </div>
         </div>
-      </div>
 
-      <!-- ── SPARK APPS page ── -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Infrastructure pods</span>
+            <span class="panel-hint" id="infraPodsHint"></span>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th style="width:34%">Name</th>
+                <th style="width:12%">Status</th>
+                <th style="width:13%">Role</th>
+                <th style="width:16%">Node</th>
+                <th style="width:13%">Created</th>
+                <th style="width:12%">Actions</th>
+              </tr></thead>
+              <tbody id="infraTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- /page-pods -->
+
+      <!-- ══ SPARK APPS PAGE ══ -->
       <div id="page-apps" class="page">
         <div class="page-header">
           <div>
             <div class="page-title">Spark applications</div>
             <div class="page-sub">SparkApplication CRDs managed by Spark Operator</div>
           </div>
-          <button class="btn btn-success" onclick="showPage('deploy', document.querySelector('.nav-item:nth-child(6)'))">+ Deploy new job</button>
+          <button class="btn btn-success"
+                  onclick="showPage('deploy', document.getElementById('nav-deploy'))">
+            + Deploy new job
+          </button>
         </div>
 
         <div class="panel">
@@ -584,9 +631,9 @@
             </table>
           </div>
         </div>
-      </div>
+      </div><!-- /page-apps -->
 
-      <!-- ── DEPLOY page ── -->
+      <!-- ══ DEPLOY PAGE ══ -->
       <div id="page-deploy" class="page">
         <div class="page-header">
           <div>
@@ -596,7 +643,9 @@
         </div>
 
         <div class="panel">
-          <div class="panel-header"><span class="panel-title">Quick presets</span></div>
+          <div class="panel-header">
+            <span class="panel-title">Quick presets</span>
+          </div>
           <div class="panel-body">
             <div class="preset-bar">
               <span class="preset-chip" onclick="applyPreset('scala-pi')">Spark Pi (Scala)</span>
@@ -608,7 +657,9 @@
         </div>
 
         <div class="panel">
-          <div class="panel-header"><span class="panel-title">Job configuration</span></div>
+          <div class="panel-header">
+            <span class="panel-title">Job configuration</span>
+          </div>
           <div class="panel-body">
             <div class="form-grid">
 
@@ -629,7 +680,8 @@
 
               <div class="form-group full">
                 <label class="form-label">JAR / application file *</label>
-                <input id="f-jar" class="form-input" value="local:///opt/spark/examples/jars/spark-examples_2.12-3.5.1.jar"/>
+                <input id="f-jar" class="form-input"
+                       value="local:///opt/spark/examples/jars/spark-examples_2.12-3.5.1.jar"/>
                 <span class="form-hint">Use local:/// for files baked into the image, or s3a:// for object storage</span>
               </div>
 
@@ -677,9 +729,10 @@
                 <input id="f-em" class="form-input" value="512m" placeholder="512m or 1g"/>
               </div>
 
-            </div>
+            </div><!-- /form-grid -->
 
-            <div style="display:flex;gap:10px;align-items:center;margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border)">
+            <div style="display:flex;gap:10px;align-items:center;margin-top:1.25rem;
+                        padding-top:1rem;border-top:1px solid var(--border)">
               <button id="submitBtn" class="btn btn-success" onclick="submitJob()">▶ Submit job</button>
               <button class="btn" onclick="previewYaml()">Preview YAML</button>
               <span id="submitStatus" style="font-size:12px;color:var(--text3)"></span>
@@ -688,33 +741,35 @@
             <pre id="yamlPre" class="yaml-pre"></pre>
           </div>
         </div>
-      </div>
+      </div><!-- /page-deploy -->
 
-      <!-- ── SPARK HISTORY page ── -->
+      <!-- ══ HISTORY PAGE ══ -->
       <div id="page-history" class="page">
-  <div class="page-header">
-    <div>
-      <div class="page-title">Spark history server</div>
-      <div class="page-sub">
-        <a id="historyExternalLink" href="#" target="_blank"
-           style="color:var(--blue)">open in new tab ↗</a>
-      </div>
-    </div>
-  </div>
-  <div class="panel">
-    <div class="panel-header"><span class="panel-title">Embedded view</span></div>
-    <div class="panel-body" style="padding:0">
-      <iframe id="historyFrame" src="" class="history-frame"
-              title="Spark History Server"></iframe>
-    </div>
-  </div>
-</div>
+        <div class="page-header">
+          <div>
+            <div class="page-title">Spark history server</div>
+            <div class="page-sub">
+              <a id="historyExternalLink" href="#" target="_blank"
+                 style="color:var(--blue)">open in new tab ↗</a>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Embedded view</span>
+          </div>
+          <div class="panel-body" style="padding:0">
+            <iframe id="historyFrame" src="" class="history-frame"
+                    title="Spark History Server"></iframe>
+          </div>
+        </div>
+      </div><!-- /page-history -->
 
     </div><!-- /content -->
   </div><!-- /main -->
 </div><!-- /shell -->
 
-<!-- log drawer -->
+<!-- ── LOG DRAWER ── -->
 <div id="logDrawer">
   <div class="log-header">
     <div>
@@ -726,12 +781,12 @@
       <button class="btn btn-sm" onclick="closeLogDrawer()">✕ Close</button>
     </div>
   </div>
-  <div id="logBody" class="log-body"></div>
+  <pre id="logBody"></pre>
 </div>
 
 <div id="toastStack"></div>
 
-  <script src="/static/js/config.js"></script>
-  <script src="/static/js/app.js"></script>
+<script src="/static/js/config.js"></script>
+<script src="/static/js/app.js"></script>
 </body>
 </html>
