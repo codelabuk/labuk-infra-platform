@@ -67,7 +67,7 @@ spec:
             - name: SPARK_HISTORY_URL
               value: "http://spark-history-server.spark.svc.cluster.local:18080"
             - name: SPARK_HISTORY_EXTERNAL_URL
-              value: "http://spark-history.codelabuk"
+              value: "https://spark-history.codelabuk.dev"
             - name: DASHBOARD_NAMESPACES
               value: "spark"
           resources:
@@ -118,8 +118,12 @@ metadata:
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - spark-dashboard.codelabuk.dev
+      secretName: spark-dashboard-tls
   rules:
-    - host: spark-dashboard.codelabuk
+    - host: spark-dashboard.codelabuk.dev
       http:
         paths:
           - path: /

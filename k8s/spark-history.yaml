@@ -103,8 +103,12 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - spark-history.codelabuk.dev
+      secretName: spark-history-tls
   rules:
-    - host: spark-history.codelabuk
+    - host: spark-history.codelabuk.dev
       http:
         paths:
           - path: /
