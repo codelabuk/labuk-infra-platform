@@ -1,9 +1,15 @@
-from config import SPARK_NAMESPACE, SPARK_HISTORY_URL, DASHBOARD_NAMESPACES, SPARK_HISTORY_EXTERNAL_URL
-import requests as req_lib
-from flask import Response
-from flask import Flask, jsonify, request, render_template
+import io
+import os
+
+from flask import Response, Flask, jsonify, request, render_template
 from flask_cors import CORS
 from kubernetes import client, config
+from minio import Minio
+import requests as req_lib
+
+from config import (SPARK_NAMESPACE, SPARK_HISTORY_URL, DASHBOARD_NAMESPACES,
+                    SPARK_HISTORY_EXTERNAL_URL, MINIO_ENDPOINT, MINIO_ACCESS_KEY,
+                    MINIO_SECRET_KEY, MINIO_BUCKET, MINIO_SPARK_ENDPOINT)
 
 app = Flask(__name__, template_folder='templates',
             static_folder='static')
@@ -15,8 +21,6 @@ try:
 except config.ConfigException:
     config.load_kube_config()
 
-# NAMESPACE = os.environ.get("SPARK_NAMESPACE", "spark")
-
 core_v1 = client.CoreV1Api()
 batch_v1 = client.BatchV1Api()
 custom_api = client.CustomObjectsApi()
@@ -24,6 +28,16 @@ custom_api = client.CustomObjectsApi()
 SPARK_GROUP = "sparkoperator.k8s.io"
 SPARK_VERSION = "v1beta2"
 SPARK_PLURAL = "sparkapplications"
+
+
+def get_minio():
+    return Minio(MINIO_ENDPOINT, access_key=MINIO_ACCESS_KEY,
+                 secret_key=MINIO_SECRET_KEY, secure=False)
+
+def ensure_bucket():
+    mc = get_minio()
+    if not mc.bucket_exists(MINIO_BUCKET):
+        mc.make_bucket(MINIO_BUCKET)
 
 
 
@@ -35,7 +49,6 @@ def index():
 @app.route('/health')
 def health():
     return jsonify({"status": "ok"})
-
 
 
 # -------------------------Pod API ------------------------
@@ -56,7 +69,6 @@ def get_pods():
                          if pod.metadata.creation_timestamp else None,
             "labels":    labels
         }
-        # spark job pods have spark-role label
         if "spark-role" in labels or "spark-app-name" in labels:
             spark_jobs.append(pod_data)
         else:
@@ -123,6 +135,21 @@ def list_spark_apps():
 def submit_spark_app():
     body = request.json
     ns = body.get("namespace", SPARK_NAMESPACE)
+    # s3a config
+    spark_conf = {
+        "spark.hadoop.fs.s3a.endpoint": MINIO_SPARK_ENDPOINT,
+        "spark.hadoop.fs.s3a.access.key": MINIO_ACCESS_KEY,
+        "spark.hadoop.fs.s3a.secret.key": MINIO_SECRET_KEY,
+        "spark.hadoop.fs.s3a.path.style.access": "true",
+        "spark.hadoop.fs.s3a.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem",
+        "spark.hadoop.fs.s3a.aws.credentials.provider":
+                "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider",
+        "spark.eventLog.enabled": "true",
+        "spark.eventLog.dir": "s3a://" + MINIO_BUCKET + "/event-logs",
+    }
+    if body.get("sparkConf"):
+        spark_conf.update(body["sparkConf"])
+
     spark_app = {
         "apiVersion": f"{SPARK_GROUP}/{SPARK_VERSION}",
         "kind": "SparkApplication",
@@ -133,10 +160,10 @@ def submit_spark_app():
         "spec": {
             "type": body.get("type", "Scala"),
             "mode": "cluster",
-            "image": body.get("image", "apache/spark:3.5.1"),
+            "image": body.get("image", "spark-jobs:latest"),
             "imagePullPolicy": body.get("imagePullPolicy", "Never"),
             "mainApplicationFile": body["jarPath"],
-            "sparkVersion": body.get("sparkVersion","3.5.1"),
+            "sparkVersion": body.get("sparkVersion","3.5.3"),
             "restartPolicy": {"type": "Never"},
             "driver": {
                 "cores": int(body.get("driverCores",1)),
@@ -175,6 +202,72 @@ def delete_spark_app(name):
         name=name
     )
     return jsonify({"deleted": name})
+
+@app.route('/api/files')
+def list_files():
+    try:
+        ensure_bucket()
+        mc = get_minio()
+        prefix = request.args.get("prefix", "jobs/")
+        objects = mc.list_objects(MINIO_BUCKET, prefix=prefix, recursive=True)
+        files = []
+        for obj in objects:
+            files.append({
+                "name": obj.object_name,
+                "size": obj.size,
+                "lastModified": obj.last_modified.isoformat() if obj.last_modified else None,
+                "s3aPath": "s3a://" + MINIO_BUCKET + "/" + obj.object_name,
+            })
+        return jsonify(files)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 200
+
+
+@app.route('/api/files/upload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({"error": "no file in request"}), 400
+    f = request.files['file']
+    if not f.filename:
+        return jsonify({"error": "Empty Filename"}), 400
+    ext = os.path.splitext(f.filename)[1].lower()
+    if ext not in ('.py', '.jar'):
+        return jsonify({"error": "Invalid Extension"}), 400
+    object_name = "jobs/" + f.filename
+    data = f.read()
+    content_type = "text/x-python" if ext == '.py' else "application/octet-stream"
+    try:
+        ensure_bucket()
+        mc = get_minio()
+        mc.put_object(MINIO_BUCKET, object_name, io.BytesIO(data),
+                      length=len(data), content_type=content_type)
+        return jsonify({
+            "uploaded": f.filename,
+            "s3aPath": "s3a://" + MINIO_BUCKET + "/" + object_name,
+            "size": len(data),
+        }), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/files/<path:object_name>', methods=["DELETE"])
+def delete_file(object_name):
+    try:
+        mc = get_minio()
+        mc.remove_object(MINIO_BUCKET, object_name)
+        return jsonify({"deleted": object_name})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/minio/status')
+def minio_status():
+    try:
+        ensure_bucket()
+        mc = get_minio()
+        buckets = [b.name for b in mc.list_buckets()]
+        return jsonify({"status": "ok", "buckets": buckets})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 200
+
 
 @app.route('/api/config')
 def get_config():

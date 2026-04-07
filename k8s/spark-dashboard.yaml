@@ -70,6 +70,24 @@ spec:
               value: "https://spark-history.codelabuk.dev"
             - name: DASHBOARD_NAMESPACES
               value: "spark"
+            - name: MINIO_ENDPOINT
+              value: "minio.minio.svc.cluster.local:9000"
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secret
+                  key: root-user
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secret
+                  key: root-password
+            - name: MINIO_BUCKET
+              value: "spark-jobs"
+            - name: MINIO_EXTERNAL_URL
+              value: "https://minio.codelabuk.dev"
+            - name: MINIO_SPARK_ENDPOINT
+              value: "http://minio.minio.svc.cluster.local:9000"
           resources:
             requests:
               memory: "128Mi"
@@ -115,7 +133,7 @@ metadata:
   name: spark-dashboard
   namespace: spark-platform
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: "500m"
 spec:
   ingressClassName: nginx
   tls:
