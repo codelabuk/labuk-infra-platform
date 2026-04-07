@@ -298,6 +298,7 @@ function getForm() {
     jarPath:           document.getElementById('f-jar').value.trim(),
     mainClass:         document.getElementById('f-mc').value.trim(),
     image:             document.getElementById('f-image').value.trim(),
+    imagePullPolicy:   document.getElementById('f-imagePull').value.trim(),
     namespace:         document.getElementById('f-ns').value.trim() || 'spark',
     sparkVersion:      document.getElementById('f-sv').value.trim(),
     driverCores:       document.getElementById('f-dc').value,
@@ -319,7 +320,7 @@ spec:
   type: ${d.type}
   mode: cluster
   image: ${d.image}
-  imagePullPolicy: Never
+  imagePullPolicy: IfNotPresent
 ${mc}  mainApplicationFile: ${d.jarPath}
   sparkVersion: "${d.sparkVersion}"
   restartPolicy:

@@ -256,13 +256,14 @@
               <div class="form-group"><label class="form-label">Type</label><select id="f-type" class="form-select" onchange="toggleMainClass()"><option value="Scala">Scala</option><option value="Java">Java</option><option value="Python">Python</option></select></div>
               <div class="form-group full">
                 <label class="form-label">JAR / application file *</label>
-                <input id="f-jar" class="form-input" value="local:///opt/spark/examples/jars/spark-examples_2.12-3.5.1.jar"/>
+                <input id="f-jar" class="form-input" value="s3a://spark-jobs/simple_counter.py"/>
                 <span class="form-hint">Use local:/// for image-baked files &nbsp;|&nbsp; s3a://spark-jobs/jobs/file.py for MinIO files</span>
               </div>
               <div class="form-group" id="mainClassGroup"><label class="form-label">Main class *</label><input id="f-mc" class="form-input" value="org.apache.spark.examples.SparkPi"/></div>
               <div class="form-group"><label class="form-label">Spark image</label><input id="f-image" class="form-input" value="apache/spark:3.5.1"/></div>
               <div class="form-group"><label class="form-label">Namespace</label><input id="f-ns" class="form-input" value="spark"/></div>
               <div class="form-group"><label class="form-label">Spark version</label><input id="f-sv" class="form-input" value="3.5.1"/></div>
+              <div class="form-group"><label class="form-label">Imag Pull Policy</label><input id="f-imagePull" class="form-input" value="IfNotPresent"/></div>
               <div class="form-section">Driver</div>
               <div class="form-group"><label class="form-label">Cores</label><input id="f-dc" class="form-input" type="number" min="1" max="8" value="1"/></div>
               <div class="form-group"><label class="form-label">Memory</label><input id="f-dm" class="form-input" value="512m" placeholder="512m or 1g"/></div>

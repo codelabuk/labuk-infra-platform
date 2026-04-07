@@ -145,6 +145,7 @@ def submit_spark_app():
         "spark.hadoop.fs.s3a.aws.credentials.provider":
                 "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider",
         "spark.eventLog.enabled": "true",
+        "spark.hadoop.fs.s3a.connection.ssl.enabled": "false",
         "spark.eventLog.dir": "s3a://" + MINIO_BUCKET + "/event-logs",
     }
     if body.get("sparkConf"):
@@ -165,6 +166,7 @@ def submit_spark_app():
             "mainApplicationFile": body["jarPath"],
             "sparkVersion": body.get("sparkVersion","3.5.3"),
             "restartPolicy": {"type": "Never"},
+            "sparkConf": spark_conf,
             "driver": {
                 "cores": int(body.get("driverCores",1)),
                 "memory": body.get("driverMemory","512m"),
@@ -177,6 +179,8 @@ def submit_spark_app():
             }
         }
     }
+
+    print(f"spark app submitted: {spark_app}")
 
     if body.get("mainClass"):
         spark_app["spec"]["mainClass"] = body["mainClass"]
