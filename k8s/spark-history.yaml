@@ -67,8 +67,8 @@ spec:
                 -Dspark.history.fs.logDirectory=s3a://spark-jobs/event-logs
                 -Dspark.history.ui.port=18080
                 -Dspark.hadoop.fs.s3a.endpoint=http://minio.minio.svc.cluster.local:9000
-                -Dspark.hadoop.fs.s3a.access.key=sparkadmin
-                -Dspark.hadoop.fs.s3a.secret.key=sparkadmin123
+                -Dspark.hadoop.fs.s3a.access.key=$(MINIO_ACCESS_KEY)
+                -Dspark.hadoop.fs.s3a.secret.key=$(MINIO_SECRET_KEY)
                 -Dspark.hadoop.fs.s3a.path.style.access=true
                 -Dspark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
                 -Dspark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider
