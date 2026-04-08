@@ -180,7 +180,7 @@ function renderPodTable(tbodyId, pods, emptyMsg) {
     const isRunning = (p.status || '').toLowerCase() === 'running';
 
     let sparkUIButton = '';
-    if (isDriver && isRunning) {
+    if (isDriver) {
       const uiUrl = `/proxy/spark-ui/${p.name}?namespace=${ns}`;
       sparkUIButton = `<a href="${uiUrl}" target="_blank" class="btn btn-sm" style="margin-left:4px" title="Open Spark UI">UI</a>`;
     }
