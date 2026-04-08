@@ -302,5 +302,52 @@ def proxy_history(subpath=''):
     except Exception as e:
         return f"<p>History server unavailable: {e}</p>", 503
 
+@app.route('/proxy/spark-ui/<pod_name>/<path:path>')
+@app.route('/proxy/spark-ui/<pod_name>/')
+@app.route('/proxy/spark-ui/<pod_name>')
+def proxy_spark_ui(pod_name, path=''):
+    namespace = request.args.get('namespace', SPARK_NAMESPACE)
+
+    target_url = f"http://{pod_name}.{namespace}.svc.cluster.local:4040/{path}"
+
+    if request.query_string:
+        target_url += '?' + request.query_string.decode('utf-8')
+
+    try:
+        resp = req_lib.request(
+            method=request.method,
+            url=target_url,
+            headers={k: v for k, v in request.headers if k.lower() != 'host'},
+            data=request.get_data(),
+            allow_redirects=False,
+            timeout=30
+        )
+
+        headers = [(k, v) for k, v in resp.headers.items()
+                   if k.lower() not in ('transfer-encoding', 'connection')]
+
+        if 'Location' in resp.headers:
+            location = resp.headers['Location']
+            if location.startswith('http'):
+                location = location.replace(
+                    f"http://{pod_name}.{namespace}.svc.cluster.local:4040",
+                    f"/proxy/spark-ui/{pod_name}"
+                )
+            headers = [(k, v if k != 'Location' else location) for k, v in headers]
+
+        return Response(
+            resp.content,
+            status=resp.status_code,
+            headers=headers
+        )
+
+    except Exception as e:
+        return jsonify({
+            "error": f"Cannot connect to Spark UI for pod {pod_name}",
+            "details": str(e),
+            "pod": pod_name,
+            "namespace": namespace
+        }), 502
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

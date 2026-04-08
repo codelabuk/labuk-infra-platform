@@ -11,28 +11,28 @@ const DEMO_LOGS = `26/04/04 09:10:05 INFO SparkContext: Running Spark version 3.
 const PRESETS = {
   'scala-pi': {
     name: 'spark-pi', type: 'Scala',
-    jar:  'local:///opt/spark/examples/jars/spark-examples_2.12-3.5.1.jar',
+    jar:  'local:///opt/spark/examples/jars/spark-examples_2.12-3.5.3.jar',
     mc:   'org.apache.spark.examples.SparkPi',
-    img:  'apache/spark:3.5.1', sv: '3.5.1',
+    img:  'apache/spark:3.5.3', sv: '3.5.3',
     dc: 1, dm: '512m', ei: 1, ec: 1, em: '512m'
   },
   'scala-wc': {
     name: 'scala-word-count', type: 'Scala',
-    jar:  'local:///opt/spark/work-dir/jobs/WordCount.jar',
+    jar:  's3a://spark-jobs/jobs/scala/word-count_2.12-0.1.jar',
     mc:   'com.codelabuk.WordCount',
-    img:  'spark-jobs:latest', sv: '3.5.3',
+    img:  'spark-codelabuk:latest', sv: '3.5.3',
     dc: 1, dm: '512m', ei: 1, ec: 1, em: '512m'
   },
   'python-counter': {
     name: 'python-counter', type: 'Python',
-    jar:  'local:///opt/spark/work-dir/jobs/simple_counter.py',
+    jar:  's3a://spark-jobs/jobs/simple_counter.py',
     mc:   '',
-    img:  'spark-jobs:latest', sv: '3.5.3',
+    img:  'spark-codelabuk:latest', sv: '3.5.3',
     dc: 1, dm: '512m', ei: 1, ec: 1, em: '512m'
   },
   'clear': {
     name: '', type: 'Scala', jar: '', mc: '',
-    img:  'apache/spark:3.5.1', sv: '3.5.1',
+    img:  'apache/spark:3.5.3', sv: '3.5.3',
     dc: 1, dm: '512m', ei: 1, ec: 1, em: '512m'
   }
 };
@@ -172,7 +172,20 @@ function renderPodTable(tbodyId, pods, emptyMsg) {
     tb.innerHTML = `<tr class="empty-row"><td colspan="6">${emptyMsg}</td></tr>`;
     return;
   }
-  tb.innerHTML = pods.map(p => `
+
+  const ns = document.getElementById('nsSelect').value;
+
+  tb.innerHTML = pods.map(p => {
+    const isDriver = p.labels && p.labels['spark-role'] === 'driver';
+    const isRunning = (p.status || '').toLowerCase() === 'running';
+
+    let sparkUIButton = '';
+    if (isDriver && isRunning) {
+      const uiUrl = `/proxy/spark-ui/${p.name}?namespace=${ns}`;
+      sparkUIButton = `<a href="${uiUrl}" target="_blank" class="btn btn-sm" style="margin-left:4px" title="Open Spark UI">UI</a>`;
+    }
+
+    return `
     <tr>
       <td style="font-family:monospace;font-size:12px" title="${p.name}">${p.name}</td>
       <td>${statusBadge(p.status)}</td>
@@ -181,10 +194,12 @@ function renderPodTable(tbodyId, pods, emptyMsg) {
       <td style="color:var(--text3)">${fmtDate(p.created)}</td>
       <td>
         <button class="btn btn-sm" onclick="openLogs('${p.name}')">logs</button>
+        ${sparkUIButton}
         <button class="btn btn-sm btn-danger" style="margin-left:4px"
                 onclick="deletePod('${p.name}')">del</button>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 // ── render apps ────────────────────────────────────────────────────────────
@@ -369,14 +384,15 @@ async function submitJob() {
       body:    JSON.stringify(d)
     });
     if (res.ok) {
-      toast(`Job "${d.name}" submitted`, 'success');
+      const result = await res.json();
+      toast(`Job "${d.name}" submitted successfully`, 'success');
       setTimeout(() => {
         showPage('apps', document.getElementById('nav-apps'));
         refresh();
       }, 1500);
     } else {
       let msg = res.statusText;
-      try { const e = await res.json(); msg = e.message || msg; } catch(_) {}
+      try { const e = await res.json(); msg = e.message || e.error || msg; } catch(_) {}
       toast(`Error: ${msg}`, 'error');
     }
   } catch (e) {
