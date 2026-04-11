@@ -31,24 +31,10 @@ spec:
     spec:
       containers:
         - name: spark-history-server
-          image: apache/spark:3.5.3
+          image: spark-history:latest
           command: ["/bin/sh", "-c"]
           args:
             - |
-              HADOOP_JAR="/opt/spark/jars/hadoop-aws-3.3.4.jar"
-              AWS_JAR="/opt/spark/jars/aws-java-sdk-bundle-1.12.262.jar"
-              
-              if [ ! -f "$HADOOP_JAR" ]; then
-                echo "Downloading hadoop-aws JAR..."
-                curl -fsSL "https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.3.4/hadoop-aws-3.3.4.jar" -o "$HADOOP_JAR"
-              fi
-              
-              if [ ! -f "$AWS_JAR" ]; then
-                echo "Downloading aws-java-sdk-bundle JAR..."
-                curl -fsSL "https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.12.262/aws-java-sdk-bundle-1.12.262.jar" -o "$AWS_JAR"
-              fi
-              
-              echo "Starting Spark History Server..."
               /opt/spark/sbin/start-history-server.sh
               tail -f /dev/null
           env:
@@ -79,13 +65,13 @@ spec:
             httpGet:
               path: /
               port: 18080
-            initialDelaySeconds: 30
+            initialDelaySeconds: 20
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /
               port: 18080
-            initialDelaySeconds: 60
+            initialDelaySeconds: 40
             periodSeconds: 20
           resources:
             requests:
