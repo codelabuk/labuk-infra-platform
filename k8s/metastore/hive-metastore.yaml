@@ -4,9 +4,11 @@ metadata:
   name: metastore-config
   namespace: metastore
 data:
-  metastore-site.xml: |
+  hive-site.xml: |
     <?xml version="1.0"?>
+    <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
     <configuration>
+      <!-- Database Connection -->
       <property>
         <name>javax.jdo.option.ConnectionDriverName</name>
         <value>org.postgresql.Driver</value>
@@ -23,11 +25,92 @@ data:
         <name>javax.jdo.option.ConnectionPassword</name>
         <value>hivepassword</value>
       </property>
+      
+      <!-- Metastore Settings -->
+      <property>
+        <name>metastore.thrift.uris</name>
+        <value>thrift://hive-metastore.metastore.svc.cluster.local:9083</value>
+      </property>
       <property>
         <name>metastore.warehouse.dir</name>
         <value>s3a://warehouse/</value>
       </property>
+      <property>
+        <name>metastore.task.threads.always</name>
+        <value>org.apache.hadoop.hive.metastore.events.EventCleanerTask</value>
+      </property>
+      
+      <!-- S3A Configuration (MinIO or AWS S3) -->
+      <property>
+        <name>fs.s3a.endpoint</name>
+        <value>http://minio.minio.svc.cluster.local:9000</value> 
+      </property>
+      <property>
+        <name>fs.s3a.access.key</name>
+        <value>sparkadmin</value> 
+      </property>
+      <property>
+        <name>fs.s3a.secret.key</name>
+        <value>sparkadmin123</value> 
+      </property>
+      <property>
+        <name>fs.s3a.path.style.access</name>
+        <value>true</value>
+      </property>
+      <property>
+        <name>fs.s3a.connection.ssl.enabled</name>
+        <value>false</value>
+      </property>
+      <property>
+        <name>fs.s3a.impl</name>
+        <value>org.apache.hadoop.fs.s3a.S3AFileSystem</value>
+      </property>
     </configuration>
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hive-schema-init
+  namespace: metastore
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+      - name: download-postgres-driver
+        image: busybox:1.36
+        command:
+        - sh
+        - -c
+        - |
+          wget -O /libs/postgresql.jar https://jdbc.postgresql.org/download/postgresql-42.7.3.jar
+        volumeMounts:
+        - name: jdbc-libs
+          mountPath: /libs
+      containers:
+      - name: schema-tool
+        image: apache/hive:4.0.0
+        command:
+        - sh
+        - -c
+        - |
+          cp /libs/postgresql.jar /opt/hive/lib/
+          /opt/hive/bin/schematool -dbType postgres -initSchema -verbose
+        env:
+        - name: HIVE_CONF_DIR
+          value: /opt/hive/conf
+        volumeMounts:
+        - name: metastore-config
+          mountPath: /opt/hive/conf/hive-site.xml
+          subPath: hive-site.xml
+        - name: jdbc-libs
+          mountPath: /libs
+      volumes:
+      - name: metastore-config
+        configMap:
+          name: metastore-config
+      - name: jdbc-libs
+        emptyDir: {}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -44,17 +127,38 @@ spec:
       labels:
         app: hive-metastore
     spec:
+      initContainers:
+      - name: download-postgres-driver
+        image: busybox:1.36
+        command:
+        - sh
+        - -c
+        - |
+          wget -O /libs/postgresql.jar https://jdbc.postgresql.org/download/postgresql-42.7.3.jar
+        volumeMounts:
+        - name: jdbc-libs
+          mountPath: /libs
       containers:
       - name: metastore
         image: apache/hive:4.0.0
-        command: ["/opt/hive/bin/hive"]
-        args: ["--service", "metastore"]
+        command:
+        - sh
+        - -c
+        - |
+          cp /libs/postgresql.jar /opt/hive/lib/
+          /opt/hive/bin/hive --service metastore
         ports:
         - containerPort: 9083
+          name: thrift
+        env:
+        - name: HIVE_CONF_DIR
+          value: /opt/hive/conf
         volumeMounts:
         - name: metastore-config
-          mountPath: /opt/hive/conf/metastore-site.xml
-          subPath: metastore-site.xml
+          mountPath: /opt/hive/conf/hive-site.xml
+          subPath: hive-site.xml
+        - name: jdbc-libs
+          mountPath: /libs
         resources:
           requests:
             memory: "1Gi"
@@ -62,10 +166,22 @@ spec:
           limits:
             memory: "2Gi"
             cpu: "1000m"
+        livenessProbe:
+          tcpSocket:
+            port: 9083
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 9083
+          initialDelaySeconds: 30
+          periodSeconds: 5
       volumes:
       - name: metastore-config
         configMap:
           name: metastore-config
+      - name: jdbc-libs
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -73,7 +189,11 @@ metadata:
   name: hive-metastore
   namespace: metastore
 spec:
+  type: ClusterIP
   ports:
   - port: 9083
+    targetPort: 9083
+    protocol: TCP
+    name: thrift
   selector:
     app: hive-metastore
