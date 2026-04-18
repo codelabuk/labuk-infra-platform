@@ -1,0 +1,23 @@
+# TODO test it
+apiVersion: v1
+kind: Pod
+metadata:
+  name: spark-sql
+  namespace: spark
+spec:
+  restartPolicy: Never
+  containers:
+    - name: spark-sql
+      image: spark-codelabuk:latest
+      imagePullPolicy: Never
+      stdin: true
+      tty: true
+      command: ["/opt/spark/bin/spark-sql"]
+      volumeMounts:
+        - name: spark-config
+          mountPath: /opt/spark/conf/spark-defaults.conf
+          subPath: spark-defaults.conf
+  volumes:
+    - name: spark-config
+      configMap:
+        name: spark-defaults
