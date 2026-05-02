@@ -1,0 +1,6 @@
+USER-SUPPLIED VALUES:
+spark:
+  jobNamespaces:
+  - spark
+webhook:
+  enable: true

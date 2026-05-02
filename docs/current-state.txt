@@ -1,0 +1,149 @@
+NAMESPACE        NAME                                               READY   STATUS      RESTARTS         AGE
+ingress-nginx    pod/ingress-nginx-admission-create-qmj89           0/1     Completed   0                25d
+ingress-nginx    pod/ingress-nginx-admission-patch-tmzb9            0/1     Completed   1                25d
+ingress-nginx    pod/ingress-nginx-controller-7bd4bbb674-f7vxz      1/1     Running     29 (41m ago)     25d
+kafka            pod/labuk-kafka-broker-0                           1/1     Running     16 (37m ago)     11d
+kafka            pod/labuk-kafka-controller-1                       1/1     Running     14 (6m49s ago)   11d
+kafka            pod/labuk-kafka-entity-operator-848944665f-ldk8x   2/2     Running     78 (29m ago)     11d
+kafka            pod/strimzi-cluster-operator-6c85688f64-5bc98      1/1     Running     106 (16m ago)    18d
+kube-system      pod/coredns-668d6bf9bc-q76fc                       1/1     Running     28 (41m ago)     25d
+kube-system      pod/coredns-668d6bf9bc-srvpg                       1/1     Running     27 (41m ago)     25d
+kube-system      pod/etcd-docker-desktop                            1/1     Running     27 (41m ago)     25d
+kube-system      pod/kube-apiserver-docker-desktop                  1/1     Running     28 (41m ago)     25d
+kube-system      pod/kube-controller-manager-docker-desktop         1/1     Running     35 (41m ago)     25d
+kube-system      pod/kube-proxy-gqg5r                               1/1     Running     27 (41m ago)     25d
+kube-system      pod/kube-scheduler-docker-desktop                  1/1     Running     60 (7m23s ago)   25d
+kube-system      pod/storage-provisioner                            1/1     Running     87 (7m24s ago)   25d
+kube-system      pod/vpnkit-controller                              1/1     Running     27 (41m ago)     25d
+metastore        pod/hive-metastore-779cfb6d6f-m4lxt                1/1     Running     15 (41m ago)     16d
+metastore        pod/postgres-5f6f559dcf-ljdrm                      1/1     Running     17 (41m ago)     17d
+minio            pod/minio-b5dd4949f-gk5n7                          1/1     Running     27 (41m ago)     24d
+spark-operator   pod/spark-operator-controller-5778fd5d68-fps4r     1/1     Running     80 (7m26s ago)   25d
+spark-operator   pod/spark-operator-webhook-6994c7955f-5tdgn        1/1     Running     85 (7m26s ago)   25d
+spark-platform   pod/spark-dashboard-56cb8b7598-hg8gk               1/1     Running     40 (41m ago)     22d
+spark            pod/driver-ingress-controller-29628255-8fhhm       0/1     Completed   0                43s
+
+NAMESPACE        NAME                                         TYPE           CLUSTER-IP       EXTERNAL-IP   PORT(S)                               AGE
+default          service/kubernetes                           ClusterIP      10.96.0.1        <none>        443/TCP                               25d
+ingress-nginx    service/ingress-nginx-controller             LoadBalancer   10.97.89.140     localhost     80:30984/TCP,443:32366/TCP            25d
+ingress-nginx    service/ingress-nginx-controller-admission   ClusterIP      10.111.32.158    <none>        443/TCP                               25d
+kafka            service/labuk-kafka-kafka-bootstrap          ClusterIP      10.111.24.92     <none>        9091/TCP,9092/TCP                     17d
+kafka            service/labuk-kafka-kafka-brokers            ClusterIP      None             <none>        9090/TCP,9091/TCP,8443/TCP,9092/TCP   17d
+kube-system      service/kube-dns                             ClusterIP      10.96.0.10       <none>        53/UDP,53/TCP,9153/TCP                25d
+metastore        service/hive-metastore                       ClusterIP      10.111.179.81    <none>        9083/TCP                              16d
+metastore        service/postgres                             ClusterIP      10.107.8.251     <none>        5432/TCP                              17d
+minio            service/minio                                NodePort       10.97.182.230    <none>        9000:32090/TCP,9001:32091/TCP         25d
+spark-operator   service/spark-operator-webhook-svc           ClusterIP      10.97.28.100     <none>        9443/TCP                              25d
+spark-platform   service/spark-dashboard                      NodePort       10.106.12.21     <none>        5000:32050/TCP                        25d
+spark            service/spark-history-server                 NodePort       10.100.133.227   <none>        18080:32080/TCP                       25d
+
+NAMESPACE     NAME                        DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR            AGE
+kube-system   daemonset.apps/kube-proxy   1         1         1       1            1           kubernetes.io/os=linux   25d
+
+NAMESPACE        NAME                                          READY   UP-TO-DATE   AVAILABLE   AGE
+ingress-nginx    deployment.apps/ingress-nginx-controller      1/1     1            1           25d
+kafka            deployment.apps/labuk-kafka-entity-operator   1/1     1            1           17d
+kafka            deployment.apps/strimzi-cluster-operator      1/1     1            1           18d
+kube-system      deployment.apps/coredns                       2/2     2            2           25d
+metastore        deployment.apps/hive-metastore                1/1     1            1           16d
+metastore        deployment.apps/postgres                      1/1     1            1           17d
+minio            deployment.apps/minio                         1/1     1            1           24d
+spark-operator   deployment.apps/spark-operator-controller     1/1     1            1           25d
+spark-operator   deployment.apps/spark-operator-webhook        1/1     1            1           25d
+spark-platform   deployment.apps/spark-dashboard               1/1     1            1           24d
+spark            deployment.apps/spark-history-server          0/0     0            0           24d
+
+NAMESPACE        NAME                                                     DESIRED   CURRENT   READY   AGE
+ingress-nginx    replicaset.apps/ingress-nginx-controller-7bd4bbb674      1         1         1       25d
+kafka            replicaset.apps/labuk-kafka-entity-operator-79f8755b58   0         0         0       17d
+kafka            replicaset.apps/labuk-kafka-entity-operator-7b675bbdd6   0         0         0       11d
+kafka            replicaset.apps/labuk-kafka-entity-operator-848944665f   1         1         1       11d
+kafka            replicaset.apps/strimzi-cluster-operator-6c85688f64      1         1         1       18d
+kube-system      replicaset.apps/coredns-668d6bf9bc                       2         2         2       25d
+metastore        replicaset.apps/hive-metastore-779cfb6d6f                1         1         1       16d
+metastore        replicaset.apps/hive-metastore-7888bdd846                0         0         0       16d
+metastore        replicaset.apps/hive-metastore-7d8994df4                 0         0         0       16d
+metastore        replicaset.apps/hive-metastore-85466cfb6f                0         0         0       16d
+metastore        replicaset.apps/postgres-5f6f559dcf                      1         1         1       17d
+minio            replicaset.apps/minio-b5dd4949f                          1         1         1       24d
+spark-operator   replicaset.apps/spark-operator-controller-5778fd5d68     1         1         1       25d
+spark-operator   replicaset.apps/spark-operator-webhook-6994c7955f        1         1         1       25d
+spark-platform   replicaset.apps/spark-dashboard-54cc984ccc               0         0         0       24d
+spark-platform   replicaset.apps/spark-dashboard-56cb8b7598               1         1         1       22d
+spark-platform   replicaset.apps/spark-dashboard-66cc894bbd               0         0         0       23d
+spark-platform   replicaset.apps/spark-dashboard-769cd9bb8f               0         0         0       23d
+spark-platform   replicaset.apps/spark-dashboard-f9ccc565                 0         0         0       24d
+spark            replicaset.apps/spark-history-server-65b55b6d4c          0         0         0       24d
+spark            replicaset.apps/spark-history-server-b9d8f4679           0         0         0       20d
+
+NAMESPACE   NAME                                      SCHEDULE      TIMEZONE   SUSPEND   ACTIVE   LAST SCHEDULE   AGE
+spark       cronjob.batch/driver-ingress-controller   */1 * * * *   <none>     False     0        43s             22d
+
+NAMESPACE       NAME                                           STATUS     COMPLETIONS   DURATION   AGE
+ingress-nginx   job.batch/ingress-nginx-admission-create       Complete   1/1           13s        25d
+ingress-nginx   job.batch/ingress-nginx-admission-patch        Complete   1/1           12s        25d
+spark           job.batch/driver-ingress-controller-29602617   Failed     0/1           17d        17d
+spark           job.batch/driver-ingress-controller-29628255   Complete   1/1           29s        43s
+NAMESPACE   NAME                              STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+kafka       data-0-labuk-kafka-broker-0       Bound    pvc-e91e4dc0-cfc4-4138-9aa8-1eddd41d4a7f   10Gi       RWO            hostpath       <unset>                 17d
+kafka       data-0-labuk-kafka-controller-1   Bound    pvc-b364a0cf-9860-4232-8e05-aa5f8a040ad0   5Gi        RWO            hostpath       <unset>                 17d
+metastore   postgres-pvc                      Bound    pvc-a6502432-1b3f-42b2-8d19-77237e75c097   5Gi        RWO            hostpath       <unset>                 17d
+minio       minio-pvc                         Bound    pvc-bb827e95-b0e0-47f9-9524-5ee051ed82f6   100Gi      RWO            hostpath       <unset>                 25d
+spark       spark-history-pvc                 Bound    pvc-8dfe4a57-fb31-48d4-b8bb-6c8e309b993f   1Gi        RWO            hostpath       <unset>                 25d
+NAMESPACE        NAME                   CLASS   HOSTS                           ADDRESS     PORTS     AGE
+minio            minio-api              nginx   minio-api.codelabuk.dev         localhost   80, 443   25d
+minio            minio-console          nginx   minio.codelabuk.dev             localhost   80, 443   25d
+spark-platform   spark-dashboard        nginx   spark-dashboard.codelabuk.dev   localhost   80, 443   25d
+spark            spark-history-server   nginx   spark-history.codelabuk.dev     localhost   80, 443   25d
+NAMESPACE         NAME                                                   DATA   AGE
+default           kube-root-ca.crt                                       1      25d
+ingress-nginx     ingress-nginx-controller                               1      25d
+ingress-nginx     kube-root-ca.crt                                       1      25d
+kafka             kube-root-ca.crt                                       1      18d
+kafka             labuk-kafka-broker-0                                   4      17d
+kafka             labuk-kafka-controller-1                               4      17d
+kafka             labuk-kafka-entity-topic-operator-config               1      17d
+kafka             labuk-kafka-entity-user-operator-config                1      17d
+kafka             strimzi-cluster-operator                               1      18d
+kube-node-lease   kube-root-ca.crt                                       1      25d
+kube-public       cluster-info                                           1      25d
+kube-public       kube-root-ca.crt                                       1      25d
+kube-system       coredns                                                1      25d
+kube-system       extension-apiserver-authentication                     6      25d
+kube-system       kube-apiserver-legacy-service-account-token-tracking   1      25d
+kube-system       kube-proxy                                             2      25d
+kube-system       kube-root-ca.crt                                       1      25d
+kube-system       kubeadm-config                                         1      25d
+kube-system       kubelet-config                                         1      25d
+metastore         kube-root-ca.crt                                       1      17d
+metastore         metastore-config                                       1      16d
+minio             kube-root-ca.crt                                       1      25d
+minio             minio-console-headers                                  2      25d
+spark-operator    kube-root-ca.crt                                       1      25d
+spark-platform    kube-root-ca.crt                                       1      25d
+spark             driver-ingress-controller                              1      22d
+spark             kube-root-ca.crt                                       1      25d
+spark             spark-defaults                                         1      13d
+NAMESPACE        NAME                                      TYPE                 DATA   AGE
+ingress-nginx    ingress-nginx-admission                   Opaque               3      25d
+kafka            labuk-kafka-broker-0                      Opaque               2      17d
+kafka            labuk-kafka-clients-ca                    Opaque               1      17d
+kafka            labuk-kafka-clients-ca-cert               Opaque               3      17d
+kafka            labuk-kafka-cluster-ca                    Opaque               1      17d
+kafka            labuk-kafka-cluster-ca-cert               Opaque               3      17d
+kafka            labuk-kafka-cluster-operator-certs        Opaque               2      17d
+kafka            labuk-kafka-controller-1                  Opaque               2      17d
+kafka            labuk-kafka-entity-topic-operator-certs   Opaque               2      17d
+kafka            labuk-kafka-entity-user-operator-certs    Opaque               2      17d
+kafka            labuk-kafka-trustbundle                   Opaque               2      17d
+minio            minio-secret                              Opaque               2      24d
+minio            minio-tls                                 kubernetes.io/tls    2      24d
+spark-operator   sh.helm.release.v1.spark-operator.v1      helm.sh/release.v1   1      25d
+spark-operator   spark-operator-webhook-certs              Opaque               4      25d
+spark-platform   minio-secret                              Opaque               2      25d
+spark-platform   spark-dashboard-tls                       kubernetes.io/tls    2      24d
+spark            driver-wildcard-tls                       kubernetes.io/tls    2      22d
+spark            minio-secret                              Opaque               2      25d
+spark            spark-history-tls                         kubernetes.io/tls    2      25d
+NAME          	NAMESPACE     	REVISION	UPDATED                              	STATUS  	CHART               	APP VERSION
+spark-operator	spark-operator	1       	2026-04-06 20:47:30.2233254 +0530 IST	deployed	spark-operator-2.5.0	2.5.0      
